@@ -1,0 +1,9 @@
+# Ignore specific folder in the data directory
+data/BJTaxi/
+data/NYCBike2/
+data/NYCTaxi/
+data/*.zip
+
+experiments/
+
+__pycache__/
