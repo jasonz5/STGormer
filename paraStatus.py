@@ -15,6 +15,7 @@ from lib.utils import (
 
 from model.models import STSSL
 from statt.layers import STAttention
+from baselines.STResNet import STResNet
 
 def main(args):
     ## 设定要输出的模型
@@ -40,7 +41,30 @@ def main(args):
         log_file.write(f"Total params: {total_params}\n")
         log_file.write(f"Params size (MB): {total_size_mb}\n")
 
-
+    ## 设定要输出的模型
+    model = STResNet(
+        learning_rate=0.0002,
+        epoches=500,
+        batch_size=32,
+        len_closeness=3,
+        len_trend=1,
+        external_dim=28,
+        map_heigh=32,
+        map_width=32,
+        nb_flow=2,
+        nb_residual_unit=4,
+        data_min = 0, 
+        data_max = 1
+    ).to(args.device)
+    model_parameters = get_model_params([model])
+    # 计算参数量和总大小
+    total_params = sum(p.numel() for p in model_parameters)
+    total_size_mb = total_params * 4 / (1024 ** 2)  # 4 bytes for float32
+    with open(log_path, "a") as log_file:
+        log_file.write(f"STResNet\n")
+        log_file.write(f"Total params: {total_params}\n")
+        log_file.write(f"Params size (MB): {total_size_mb}\n")
+        
 if __name__ == '__main__':  
     parser = argparse.ArgumentParser()
     parser.add_argument('--gpu_id', type=str, default='7', help='GPU ID to use')

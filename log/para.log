@@ -4,3 +4,6 @@ Params size (MB): 0.7494659423828125
 ST-Attention
 Total params: 300352
 Params size (MB): 1.145751953125
+STResNet
+Total params: 927720
+Params size (MB): 3.538970947265625
