@@ -15,10 +15,12 @@ from lib.utils import (
 from lib.metrics import test_metrics
 
 class Trainer(object):
-    def __init__(self, model, optimizer, dataloader, graph, args):
+    def __init__(self, model, optimizer, scheduler, dataloader, graph, args):
         super(Trainer, self).__init__()
         self.model = model 
         self.optimizer = optimizer
+        self.lrate = args.lr_init
+        self.lr_scheduler = scheduler
         self.train_loader = dataloader['train']
         self.val_loader = dataloader['val']
         self.test_loader = dataloader['test']
@@ -40,7 +42,7 @@ class Trainer(object):
         # create a panda object to log loss and acc
         self.training_stats = PD_Stats(
             os.path.join(args.log_dir, 'stats.pkl'), 
-            ['epoch', 'train_loss', 'val_loss'],
+            ['epoch', 'train_loss', 'val_loss', 'cur_lr'],
         )
         self.logger.info('Experiment log path in: {}'.format(args.log_dir))
         self.logger.info('Experiment configs are: {}'.format(args))
@@ -115,9 +117,15 @@ class Trainer(object):
             
             val_dataloader = self.val_loader if self.val_loader != None else self.test_loader
             val_epoch_loss = self.val_epoch(epoch, val_dataloader)       
-            if not self.args.debug:
-                self.training_stats.update((epoch, train_epoch_loss, val_epoch_loss))
 
+            if self.lr_scheduler is None:
+                cur_lr = self.lrate
+            else:
+                cur_lr = self.lr_scheduler.get_last_lr()[0]
+                self.lr_scheduler.step()
+            if not self.args.debug:
+                self.training_stats.update((epoch, train_epoch_loss, val_epoch_loss, cur_lr)) 
+                
             if val_epoch_loss < best_loss:
                 best_loss = val_epoch_loss
                 best_epoch = epoch

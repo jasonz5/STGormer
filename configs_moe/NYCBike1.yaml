@@ -3,7 +3,7 @@ seed: 31
 device: cuda
 mode: train
 best_path: None 
-debug: True  
+debug: False  
 
 ## data 
 data_dir: data
@@ -24,10 +24,13 @@ dropout: 0.1
 yita: 0.6                   # balance for inflow loss and outflow loss, $yita * inflow + (1 - yita) * outflow$
 
 ## train
-epochs: 100
-lr_init: 1.0e-4        # 0.001
+epochs: 200
+lr_init: 0.002        # 0.001
+scheduler: 'MultiStepLR'
+milestones: [1, 10, 20, 40, 60, 80, 120]
+gamma: 0.5
 early_stop: True
-early_stop_patience: 15
+early_stop_patience: 25
 grad_norm: True
 max_grad_norm: 5
 use_dwa: False         # whether to use dwa for loss balance
