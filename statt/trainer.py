@@ -96,6 +96,16 @@ class Trainer(object):
         best_loss = float('inf')
         best_epoch = 0
         not_improved_count = 0
+        
+        # if has best model, load it and train
+        if self.args.best_path is not None:
+            state_dict = torch.load(
+                self.args.best_path,
+                map_location=torch.device(self.args.device)
+            )
+            self.model.load_state_dict(state_dict['model'])
+            self.logger.info('Load best model from: {}'.format(self.args.best_path))
+        
         start_time = time.time()
 
         loss_tm1 = loss_t = np.ones(3) #(1.0, 1.0, 1.0)
