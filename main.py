@@ -80,7 +80,7 @@ if __name__=='__main__':
     args = parser.parse_args()
     
     print(f'Starting experiment with configurations in {args.config_filename}...')
-    time.sleep(3)
+    time.sleep(1)
     configs = yaml.load(
         open(args.config_filename), 
         Loader=yaml.FullLoader

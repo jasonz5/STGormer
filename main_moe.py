@@ -9,6 +9,7 @@ import argparse
 import traceback
 import time
 import torch
+import os
 
 from statt.models import STAtt
 from statt.trainer import Trainer
@@ -75,16 +76,18 @@ def model_supervisor(args):
 
 if __name__=='__main__':
     parser = argparse.ArgumentParser()
+    parser.add_argument('--gpu_id', type=str, default='0', help='GPU ID to use')
     parser.add_argument('--config_filename', default='configs_moe/NYCBike1.yaml', 
                     type=str, help='the configuration to use')
     args = parser.parse_args()
     
     print(f'Starting experiment with configurations in {args.config_filename}...')
-    time.sleep(3)
+    time.sleep(1)
     configs = yaml.load(
         open(args.config_filename), 
         Loader=yaml.FullLoader
     )
-
+    
+    os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu_id
     args = argparse.Namespace(**configs)
     model_supervisor(args)

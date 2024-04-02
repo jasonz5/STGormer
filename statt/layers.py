@@ -4,6 +4,9 @@ import torch.nn as nn
 import torch.nn.functional as F 
 import torch.nn.init as init
 
+import sys
+sys.path.append('.')
+sys.path.append('..')
 from statt.positional_encoding import PositionalEncoding
 from statt.transformer_layers import TransformerLayers
 
@@ -66,7 +69,7 @@ class STAttention(nn.Module):
 
 
 
-    def forward(self, history_data, graph): # history_data: n,l,v,c; graph: v,v 
+    def forward(self, history_data, graph=None): # history_data: n,l,v,c; graph: v,v 
         repr = self.encoding(history_data) # B, N, P, d
         repr = repr.transpose(-2,-3) # n,l,v,c
         return repr[:,-1:,:,:]
@@ -100,23 +103,24 @@ class FCLayer(nn.Module):
 ########################################
 def main():
     import sys
-    from torchsummary import summary
-    GPU = sys.argv[-1] if len(sys.argv) == 2 else '2'
-    device = torch.device("cuda:{}".format(GPU)) if torch.cuda.is_available() else torch.device("cpu")
-    model = STAttention(
-        patch_size=12,
-        in_channel=1,
-        embed_dim=96,
-        num_heads=4,
-        mlp_ratio=4,
-        dropout=0.1,
-        mask_ratio=0.75,
-        encoder_depth=4,
-        decoder_depth=1,
-        mode="pre-train"
-    ).to(device)
-    summary(model, (288*7, 307, 1), device=device)
+    import os
+    import torch
+    from torchinfo import summary
+    import contextlib
+    
+    # 设置CUDA设备
+    GPU = sys.argv[-1] if len(sys.argv) == 2 else '0'
+    os.environ['CUDA_VISIBLE_DEVICES'] = GPU
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    
+    model = STAttention(in_channel=2, embed_dim=64, num_heads=4, mlp_ratio=4, encoder_depth=1, dropout=0.1).to(device)
 
+    # 定义日志文件的路径
+    log_path = "../log/statt.log"  # 根据您的目录结构调整路径
+
+    with open(log_path, "w") as log_file:
+        with contextlib.redirect_stdout(log_file):
+            summary(model, input_size=(1, 19, 128, 2), device=device)
 
 if __name__ == '__main__':
     main()
