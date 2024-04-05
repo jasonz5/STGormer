@@ -3,7 +3,7 @@ seed: 31
 device: cuda
 mode: train
 best_path: Null # experiments/NYCBike1/STAtt/lr0.0001/best_model.pth   # None 
-debug: True  
+debug: False  
 
 ## data 
 data_dir: data
@@ -24,10 +24,10 @@ dropout: 0.1
 yita: 0.6                   # balance for inflow loss and outflow loss, $yita * inflow + (1 - yita) * outflow$
 
 ## train
-epochs: 150
+epochs: 250
 lr_init: 1.0e-4        # 0.001
 scheduler: 'MultiStepLR'
-milestones: [20, 40, 60, 80, 100]
+milestones: [120, 140, 160, 180, 200]
 gamma: 0.9
 early_stop: True
 early_stop_patience: 25

@@ -2,7 +2,7 @@
 import numpy as np
 import torch.nn as nn
 import torch.nn.functional as F
-from transformer.Modules import ScaledDotProductAttention
+from model.transformer.Modules import ScaledDotProductAttention
 
 ''' Adjust according to STGSP '''
 
@@ -53,9 +53,7 @@ class MultiHeadAttention(nn.Module):
         output = output.transpose(1, 2).contiguous().view(sz_b, len_q, -1)
         output = self.dropout(self.fc(output))
         output += residual
-
-        output = self.layer_norm(q)
-
+        output = self.layer_norm(output)
         return output, attn
     
 

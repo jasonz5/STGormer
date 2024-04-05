@@ -1,6 +1,6 @@
 import math
 from torch import nn
-from transformer.Layers import EncoderLayer
+from model.transformer.Layers import EncoderLayer
 
 class TransformerLayers(nn.Module):
     def __init__(self, d_model, nlayers, mlp_ratio, num_heads=4, dropout=0.1):
@@ -13,6 +13,7 @@ class TransformerLayers(nn.Module):
     def forward(self, src, mask=None, return_attns=False):
         B, N, L, D = src.shape
         src = src * math.sqrt(self.d_model)
+        src=src.contiguous()
         src = src.view(B*N, L, D)
         
         enc_slf_attn_list = []
@@ -21,7 +22,6 @@ class TransformerLayers(nn.Module):
             enc_output, enc_slf_attn = enc_layer(enc_output, slf_attn_mask=mask)
             enc_slf_attn_list += [enc_slf_attn] if return_attns else []
         enc_output = enc_output.view(B, N, L, D)
-        
         if return_attns:
             return enc_output, enc_slf_attn_list
         return enc_output,

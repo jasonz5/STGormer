@@ -13,7 +13,8 @@ class STAtt(nn.Module):
         # spatial temporal encoder
         # self.encoder = STAttention(Kt=3, Ks=3, blocks=[[2, int(args.d_model//2), args.d_model], [args.d_model, int(args.d_model//2), args.d_model]], 
         #                 input_length=args.input_length, num_nodes=args.num_nodes, droprate=args.dropout)
-        self.encoder = STAttention(args.d_input, args.d_model, args.num_heads, args.mlp_ratio, args.encoder_depth, args.dropout)
+        self.encoder = STAttention(
+            args.d_input, args.d_model, args.num_heads, args.mlp_ratio, args.encoder_depth, args.dropout)
         
         # traffic flow prediction branch
         self.mlp = MLP(args.d_model, args.d_output)

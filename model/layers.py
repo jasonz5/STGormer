@@ -11,27 +11,26 @@ from model.transformer_layers import TransformerLayers
 
 class STAttention(nn.Module):
 
-    def __init__(self, in_channel, embed_dim, num_heads, mlp_ratio, encoder_depth, dropout, nblocks):
+    def __init__(self, in_channel, embed_dim, num_heads, mlp_ratio, encoder_depth, dropout, num_blocks=2, nlayers=3):
         super(STAttention, self).__init__()
         self.in_channel = in_channel
         self.embed_dim = embed_dim
         self.num_heads = num_heads
         self.mlp_ratio = mlp_ratio
         self.encoder_depth = encoder_depth
+        self.num_blocks = num_blocks
+        self.nlayers = nlayers
 
         # positional encoding
         self.pos_mat=None
         self.positional_encoding = PositionalEncoding()
         #TODO:之后可以考虑加入时间和空间维度的位置编码
         
-        # blocks
         self.project = FCLayer(in_channel, embed_dim)
-        self.encoder_t11 = TransformerLayers(embed_dim, encoder_depth, mlp_ratio, num_heads, dropout)
-        self.encoder_s12 = TransformerLayers(embed_dim, encoder_depth, mlp_ratio, num_heads, dropout)
-        self.encoder_t13 = TransformerLayers(embed_dim, encoder_depth, mlp_ratio, num_heads, dropout)
-        self.encoder_t21 = TransformerLayers(embed_dim, encoder_depth, mlp_ratio, num_heads, dropout)
-        self.encoder_s22 = TransformerLayers(embed_dim, encoder_depth, mlp_ratio, num_heads, dropout)
-        self.encoder_t23 = TransformerLayers(embed_dim, encoder_depth, mlp_ratio, num_heads, dropout)
+        # blocks:(TST)*num_blocks
+        self.st_encoder = nn.ModuleList([
+            TransformerLayers(embed_dim, encoder_depth, mlp_ratio, num_heads, dropout)
+            for _ in range(num_blocks*nlayers)])
 
     def encoding(self, history_data):
         """
@@ -46,19 +45,21 @@ class STAttention(nn.Module):
         # positional embedding
         encoder_input, self.pos_mat = self.positional_encoding(patches)# B, N, P, d
         
-        ## ST block 1
+        for i in range(0, len(self.st_encoder), self.nlayers):
+            encoder_input, *_ = self.st_encoder[i](encoder_input) # B, N, P, d
+            encoder_input = encoder_input.transpose(-2,-3)
+            encoder_input, *_ = self.st_encoder[i+1](encoder_input) # B, P, N, d
+            encoder_input = encoder_input.transpose(-2,-3)
+            encoder_input, *_ = self.st_encoder[i+2](encoder_input) # B, N, P, d
+        '''
+        ## ST block 1 (deprecated)
         encoder_input = self.encoder_t11(encoder_input) # B, N, P, d
         encoder_input = encoder_input.transpose(-2,-3)
         encoder_input = self.encoder_s12(encoder_input) # B, P, N, d
         encoder_input = encoder_input.transpose(-2,-3)
         encoder_input = self.encoder_t13(encoder_input) # B, N, P, d
+        '''
         
-        ## ST block 2
-        encoder_input = self.encoder_t21(encoder_input) # B, N, P, d
-        encoder_input = encoder_input.transpose(-2,-3)
-        encoder_input = self.encoder_s22(encoder_input) # B, P, N, d
-        encoder_input = encoder_input.transpose(-2,-3)
-        encoder_input = self.encoder_t23(encoder_input) # B, N, P, d
         return encoder_input
 
 

@@ -2,7 +2,7 @@
 import torch
 import torch.nn as nn
 import numpy as np
-from transformer.Layers import EncoderLayer, DecoderLayer
+from model.transformer.Layers import EncoderLayer, DecoderLayer
 
 class TrandformerEncoder(nn.Module):
     ''' A encoder model with self attention mechanism. '''
