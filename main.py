@@ -9,8 +9,9 @@ import argparse
 import traceback
 import time
 import torch
+import os
 
-from model.models import STSSL
+from model.models import STAtt
 from model.trainer import Trainer
 from lib.dataloader import get_dataloader
 from lib.utils import (
@@ -35,7 +36,7 @@ def model_supervisor(args):
     args.num_nodes = len(graph)
     
     ## init model and set optimizer
-    model = STSSL(args).to(args.device)
+    model = STAtt(args).to(args.device)
     model_parameters = get_model_params([model])
     optimizer = torch.optim.Adam(
         params=model_parameters, 
@@ -44,11 +45,13 @@ def model_supervisor(args):
         weight_decay=0, 
         amsgrad=False
     )
+    scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=args.milestones, gamma=args.gamma)
 
     ## start training
     trainer = Trainer(
         model=model, 
         optimizer=optimizer, 
+        scheduler=scheduler,
         dataloader=dataloader,
         graph=graph, 
         args=args
@@ -75,7 +78,8 @@ def model_supervisor(args):
 
 if __name__=='__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--config_filename', default='configs/NYCBike1.yaml', 
+    parser.add_argument('--gpu_id', type=str, default='7', help='GPU ID to use')
+    parser.add_argument('--config_filename', default='configs_moe/NYCBike1.yaml', 
                     type=str, help='the configuration to use')
     args = parser.parse_args()
     
@@ -85,6 +89,7 @@ if __name__=='__main__':
         open(args.config_filename), 
         Loader=yaml.FullLoader
     )
-
+    
+    os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu_id
     args = argparse.Namespace(**configs)
     model_supervisor(args)

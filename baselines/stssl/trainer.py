@@ -15,12 +15,10 @@ from lib.utils import (
 from lib.metrics import test_metrics
 
 class Trainer(object):
-    def __init__(self, model, optimizer, scheduler, dataloader, graph, args):
+    def __init__(self, model, optimizer, dataloader, graph, args):
         super(Trainer, self).__init__()
         self.model = model 
         self.optimizer = optimizer
-        self.lrate = args.lr_init
-        self.lr_scheduler = scheduler
         self.train_loader = dataloader['train']
         self.val_loader = dataloader['val']
         self.test_loader = dataloader['test']
@@ -42,23 +40,23 @@ class Trainer(object):
         # create a panda object to log loss and acc
         self.training_stats = PD_Stats(
             os.path.join(args.log_dir, 'stats.pkl'), 
-            ['epoch', 'train_loss', 'val_loss', 'cur_lr'],
+            ['epoch', 'train_loss', 'val_loss'],
         )
         self.logger.info('Experiment log path in: {}'.format(args.log_dir))
         self.logger.info('Experiment configs are: {}'.format(args))
     
-    def train_epoch(self, epoch):
+    def train_epoch(self, epoch, loss_weights):
         self.model.train()
         
         total_loss = 0
-        # total_sep_loss = np.zeros(3) 
+        total_sep_loss = np.zeros(3) 
         for batch_idx, (data, target) in enumerate(self.train_loader):
             self.optimizer.zero_grad()
             
             # input shape: n,l,v,c; graph shape: v,v;
             # import ipdb; ipdb.set_trace()
-            repr = self.model(data, self.graph) # nvc
-            loss = self.model.loss(repr, target, self.scaler)
+            repr1, repr2 = self.model(data, self.graph) # nvc
+            loss, sep_loss = self.model.loss(repr1, repr2, target, self.scaler, loss_weights)
             assert not torch.isnan(loss)
             loss.backward()
 
@@ -69,22 +67,22 @@ class Trainer(object):
                     self.args.max_grad_norm)
             self.optimizer.step()
             total_loss += loss.item()
-            # total_sep_loss += sep_loss
+            total_sep_loss += sep_loss
 
         train_epoch_loss = total_loss/self.train_per_epoch
-        # total_sep_loss = total_sep_loss/self.train_per_epoch
+        total_sep_loss = total_sep_loss/self.train_per_epoch
         self.logger.info('*******Train Epoch {}: averaged Loss : {:.6f}'.format(epoch, train_epoch_loss))
 
-        return train_epoch_loss  #, total_sep_loss
+        return train_epoch_loss, total_sep_loss
     
-    def val_epoch(self, epoch, val_dataloader):
+    def val_epoch(self, epoch, val_dataloader, loss_weights):
         self.model.eval()
         
         total_val_loss = 0
         with torch.no_grad():
             for batch_idx, (data, target) in enumerate(val_dataloader):
-                repr = self.model(data, self.graph)
-                loss = self.model.loss(repr, target, self.scaler)
+                repr1, repr2 = self.model(data, self.graph)
+                loss, sep_loss = self.model.loss(repr1, repr2, target, self.scaler, loss_weights)
 
                 if not torch.isnan(loss):
                     total_val_loss += loss.item()
@@ -96,20 +94,9 @@ class Trainer(object):
         best_loss = float('inf')
         best_epoch = 0
         not_improved_count = 0
-        
-        # if has best model, load it and train
-        if self.args.best_path is not None:
-            state_dict = torch.load(
-                self.args.best_path,
-                map_location=torch.device(self.args.device)
-            )
-            self.model.load_state_dict(state_dict['model'])
-            self.logger.info('Load best model from: {}'.format(self.args.best_path))
-        
         start_time = time.time()
 
         loss_tm1 = loss_t = np.ones(3) #(1.0, 1.0, 1.0)
-        # loss_weights = np.ones(3) # used in dwa mechanism
         for epoch in range(1, self.args.epochs + 1):
             # dwa mechanism to balance optimization speed for different tasks
             if self.args.use_dwa:
@@ -120,22 +107,16 @@ class Trainer(object):
                 else:
                     loss_weights  = dwa(loss_tm1, loss_tm2, self.args.temp)
             # self.logger.info('loss weights: {}'.format(loss_weights))
-            train_epoch_loss = self.train_epoch(epoch)
+            train_epoch_loss, loss_t = self.train_epoch(epoch, loss_weights)
             if train_epoch_loss > 1e6:
                 self.logger.warning('Gradient explosion detected. Ending...')
                 break
             
             val_dataloader = self.val_loader if self.val_loader != None else self.test_loader
-            val_epoch_loss = self.val_epoch(epoch, val_dataloader)       
-
-            if self.lr_scheduler is None:
-                cur_lr = self.lrate
-            else:
-                cur_lr = self.lr_scheduler.get_last_lr()[0]
-                self.lr_scheduler.step()
+            val_epoch_loss = self.val_epoch(epoch, val_dataloader, loss_weights)       
             if not self.args.debug:
-                self.training_stats.update((epoch, train_epoch_loss, val_epoch_loss, cur_lr)) 
-                
+                self.training_stats.update((epoch, train_epoch_loss, val_epoch_loss))
+
             if val_epoch_loss < best_loss:
                 best_loss = val_epoch_loss
                 best_epoch = epoch
@@ -188,8 +169,8 @@ class Trainer(object):
         y_true = []
         with torch.no_grad():
             for batch_idx, (data, target) in enumerate(dataloader):
-                repr = model(data, graph)                
-                pred_output = model.predict(repr)
+                repr1, repr2 = model(data, graph)                
+                pred_output = model.predict(repr1, repr2)
 
                 y_true.append(target)
                 y_pred.append(pred_output)

@@ -13,9 +13,13 @@ from lib.utils import (
     load_graph, 
 )
 
-from model.models import STSSL
-from statt.layers import STAttention
+from baselines.stssl.models import STSSL
+from model.layers import STAttention
 from baselines.STResNet import STResNet
+
+def print_model_parm_nums(model, str):
+    total_num = sum([param.nelement() for param in model.parameters()])
+    print('{} params: {}'.format(str, total_num))
 
 def main(args):
     ## 设定要输出的模型

@@ -2,8 +2,8 @@
 seed: 31
 device: cuda
 mode: train
-best_path: experiments/NYCBike1/STAtt/lr0.0001/best_model.pth   # None 
-debug: False  
+best_path: Null # experiments/NYCBike1/STAtt/lr0.0001/best_model.pth   # None 
+debug: True  
 
 ## data 
 data_dir: data
