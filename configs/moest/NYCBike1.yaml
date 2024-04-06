@@ -1,5 +1,5 @@
 ## global
-seed: 31
+seed:  56  # 1006 2021 101 31
 device: cuda
 mode: train
 best_path: Null # experiments/NYCBike1/STAtt/lr0.0001/best_model.pth   # None 

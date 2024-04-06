@@ -5,6 +5,6 @@ data/NYCTaxi/
 data/*.zip
 
 experiments/*
-!experiments/view.ipynb
+!experiments/*.ipynb
 
 __pycache__/

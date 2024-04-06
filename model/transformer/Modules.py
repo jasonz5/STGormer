@@ -29,21 +29,26 @@ class ScaledDotProductAttention(nn.Module):
 
         attn = self.dropout(attn)
         output = torch.matmul(attn, v)
-
         return output, attn
 
-def sparse_dot_product(key, value, query, k=0):
-    scores = torch.matmul(query, key.transpose(2, 3))
+    def sparse_dot_product(self, query, key, value, k=0):
+        scores = torch.matmul(query, key.transpose(-2, -1)) / self.temperature
 
-    if (k > key.size()[1]):
-        k = key.size()[1]
+        # 如果k大于序列长度，则重置k为序列长度
+        if (k > key.size()[2]):
+            k = key.size()[2]
 
-    if k:
-        v, _ = torch.topk(scores, k)
-        vk = v[:, :, -1].unsqueeze(2).expand_as(scores)
-        mask_k = torch.lt(scores, vk)
-        scores = scores.masked_fill(mask_k, -np.inf)
+        # 如果k非零，则执行稀疏操作
+        if k:
+            # v包含scores中最高的k个注意力weights。#dim : (batch_size, num_heads, seq_length_query, k)
+            v, _ = torch.topk(scores, k, dim=-1) 
+            # 首先选择每个query对应的第k大的score，广播到scores相同的维度大小
+            vk = v[:, :, :, -1].unsqueeze(-1).expand_as(scores)
+            # 所有小于其对应query的第k大score的元素位置为True，其余为False。
+            mask_k = torch.lt(scores, vk)
+            scores = scores.masked_fill(mask_k, float('-inf'))
 
-    attn = F.softamx(scores)
-    context = torch.matmul(attn, value)
-    return context, attn
+        attn = F.softamx(scores, dim=-1)
+        attn = self.dropout(attn)
+        output = torch.matmul(attn, value)
+        return output, attn

@@ -1,5 +1,6 @@
 ''' Define the sublayers in encoder/decoder layer '''
 import numpy as np
+import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from model.transformer.Modules import ScaledDotProductAttention
@@ -74,3 +75,44 @@ class PositionwiseFeedForward(nn.Module):
         x += residual
         x = self.layer_norm(x)
         return x
+    
+class Expert(nn.Module):
+    ''' A two-feed-forward-layer module '''
+    def __init__(self, input_dim, hidden_dim, dropout=0.1):
+        super(Expert, self).__init__()
+        self.network = nn.Sequential(
+            nn.Linear(input_dim, hidden_dim),
+            nn.ReLU(),
+            nn.Linear(hidden_dim, input_dim)
+        )
+        self.layer_norm = nn.LayerNorm(input_dim)
+        self.dropout = nn.Dropout(dropout)
+
+    def forward(self, x):
+        residual = x
+        x = self.network(x)
+        x = self.dropout(x)
+        x += residual
+        x = self.layer_norm(x)
+        return x
+
+class MoE(nn.Module):
+    def __init__(self, num_experts, input_dim, hidden_dim, dropout=0.1):
+        super(MoE, self).__init__()
+        self.num_experts = num_experts
+        self.experts = nn.ModuleList([Expert(input_dim, hidden_dim, dropout=dropout) for _ in range(num_experts)])
+        self.gate = nn.Linear(input_dim, num_experts)
+
+    def forward(self, x):
+        # 为每个时间步应用门控机制
+        # 假设 x 的维度是 [batch_size, len_seq, input_dim]
+        gating_distribution = F.softmax(self.gate(x), dim=-1)   # [batch_size, len_seq, num_experts]
+
+        # 获取每个专家的输出
+        expert_outputs = [expert(x) for expert in self.experts]  # List of [batch_size, len_seq, output_dim]
+        expert_outputs = torch.stack(expert_outputs, dim=2) # [batch_size, len_seq, num_experts, output_dim]
+
+        # 将专家的输出与相应的权重相乘，并求和
+        output = torch.einsum('blnd,bln->bld', expert_outputs, gating_distribution)
+        
+        return output

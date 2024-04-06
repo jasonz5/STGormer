@@ -1,8 +1,8 @@
 ## global
-seed: 31
+seed: 56 # 56 1006 2021 101 31
 device: cuda
 mode: train
-best_path: None 
+best_path: Null 
 debug: False 
 
 ## data
@@ -17,17 +17,20 @@ graph_file: data/NYCTaxi/adj_mx.npz # num_nodes 200 (20 x 10)
 d_input: 2                  # means inflow and outflow
 d_output: 2                 # means inflow and outflow
 d_model: 64
+num_heads: 4
+mlp_ratio: 4
+encoder_depth: 1
 dropout: 0.1
-percent: 0.1                # augumentation percentage  
-shm_temp: 0.5               # temperature for loss of spatial heterogeneity modeling  , 0.5 is best for NYCBike
-nmb_prototype: 4            # number of clusters
 yita: 0.5                   # balance for inflow loss and outflow loss, $yita * inflow + (1 - yita) * outflow$
 
 ## train 
-epochs: 100
-lr_init: 0.001 
+epochs: 250
+lr_init: 1.0e-4        # 0.001
+scheduler: 'MultiStepLR'
+milestones: [120, 140, 160, 180, 200]
+gamma: 0.9
 early_stop: True
-early_stop_patience: 15
+early_stop_patience: 25
 grad_norm: True
 max_grad_norm: 5
 use_dwa: True         # whether to use dwa for loss balance

@@ -12,7 +12,6 @@ class TransformerLayers(nn.Module):
 
     def forward(self, src, mask=None, return_attns=False):
         B, N, L, D = src.shape
-        src = src * math.sqrt(self.d_model)
         src=src.contiguous()
         src = src.view(B*N, L, D)
         
