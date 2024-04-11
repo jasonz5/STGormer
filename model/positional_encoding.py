@@ -27,6 +27,3 @@ class PositionalEncoding(nn.Module):
         pos_enc=tp_enc_2d(input_data)
         input_data += pos_enc
         return input_data, pos_enc
-
-        # input_data+=tp_enc_2d(input_data)
-        # return input_data,tp_enc_2d(input_data)

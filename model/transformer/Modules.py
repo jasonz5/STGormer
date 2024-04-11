@@ -9,13 +9,13 @@ class ScaledDotProductAttention(nn.Module):
     ''' Scaled Dot-Product Attention '''
 
     def __init__(self, temperature, attn_dropout=0.1):
-        super().__init__()
+        super(ScaledDotProductAttention, self).__init__()
         self.temperature = temperature
         self.dropout = nn.Dropout(attn_dropout)
 
     def forward(self, q, k, v, mask=None):
 
-        attn = torch.matmul(q / self.temperature, k.transpose(2, 3))
+        attn = torch.matmul(q, k.transpose(-2, -1)) / self.temperature
 
         if mask is not None:
             attn = attn.masked_fill(mask == 0, -np.inf)
@@ -48,7 +48,7 @@ class ScaledDotProductAttention(nn.Module):
             mask_k = torch.lt(scores, vk)
             scores = scores.masked_fill(mask_k, float('-inf'))
 
-        attn = F.softamx(scores, dim=-1)
+        attn = F.softmax(scores, dim=-1)
         attn = self.dropout(attn)
         output = torch.matmul(attn, value)
         return output, attn

@@ -4,6 +4,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from model.transformer.Modules import ScaledDotProductAttention
+from model.moe.mixture_of_experts import MoE, HeirarchicalMoE, Experts
 
 ''' Adjust according to STGSP '''
 
@@ -11,7 +12,7 @@ class MultiHeadAttention(nn.Module):
     ''' Multi-Head Attention module '''
 
     def __init__(self, n_head, d_model, d_k, d_v, dropout=0.1):
-        super().__init__()
+        super(MultiHeadAttention, self).__init__()
 
         self.n_head = n_head
         self.d_k = d_k
@@ -62,7 +63,7 @@ class PositionwiseFeedForward(nn.Module):
     ''' A two-feed-forward-layer module '''
 
     def __init__(self, d_in, d_hid, dropout=0.1):
-        super().__init__()
+        super(PositionwiseFeedForward, self).__init__()
         self.w_1 = nn.Linear(d_in, d_hid) # position-wise
         self.w_2 = nn.Linear(d_hid, d_in) # position-wise
         self.layer_norm = nn.LayerNorm(d_in)
@@ -76,10 +77,28 @@ class PositionwiseFeedForward(nn.Module):
         x = self.layer_norm(x)
         return x
     
-class Expert(nn.Module):
+class MoEFNN(nn.Module):
+    ''' MOE FNN module '''
+
+    def __init__(self, d_in, num_experts, d_hid=None, dropout=0.1):
+        super(MoEFNN, self).__init__()
+        self.moefnn = MoE(d_in, num_experts, d_hid)
+        self.layer_norm = nn.LayerNorm(d_in)
+        self.dropout = nn.Dropout(dropout)
+
+    def forward(self, x):
+        residual = x
+        x, loss = self.moefnn(x)
+        x = self.dropout(x)
+        x += residual
+        x = self.layer_norm(x)
+        return x, loss
+
+
+class ExpertFNN(nn.Module):
     ''' A two-feed-forward-layer module '''
     def __init__(self, input_dim, hidden_dim, dropout=0.1):
-        super(Expert, self).__init__()
+        super(ExpertFNN, self).__init__()
         self.network = nn.Sequential(
             nn.Linear(input_dim, hidden_dim),
             nn.ReLU(),
@@ -96,23 +115,34 @@ class Expert(nn.Module):
         x = self.layer_norm(x)
         return x
 
-class MoE(nn.Module):
-    def __init__(self, num_experts, input_dim, hidden_dim, dropout=0.1):
-        super(MoE, self).__init__()
+class ExpertFNNMoE(nn.Module):
+    def __init__(self, input_dim, hidden_dim, num_experts=6, dropout=0.1):
+        super(ExpertFNNMoE, self).__init__()
         self.num_experts = num_experts
-        self.experts = nn.ModuleList([Expert(input_dim, hidden_dim, dropout=dropout) for _ in range(num_experts)])
+        self.experts = nn.ModuleList([ExpertFNN(input_dim, hidden_dim, dropout=dropout) for _ in range(num_experts)])
         self.gate = nn.Linear(input_dim, num_experts)
 
-    def forward(self, x):
-        # 为每个时间步应用门控机制
-        # 假设 x 的维度是 [batch_size, len_seq, input_dim]
-        gating_distribution = F.softmax(self.gate(x), dim=-1)   # [batch_size, len_seq, num_experts]
+    def forward(self, x, top_k=0):
+        # 为每个时间步应用门控机制, 假设 x 的维度是 [batch_size, len_seq, input_dim]
+        gating_distribution = self.gate(x)   # [batch_size, len_seq, num_experts]
 
-        # 获取每个专家的输出
+        # 如果top_k大于num_experts，则重置top_k为num_experts
+        if (top_k > gating_distribution.size()[-1]):
+            top_k = gating_distribution.size()[-1]
+        # 如果top_k非零，则专家稀疏化
+        if top_k:
+            v, _ = torch.topk(gating_distribution, top_k, dim=-1) 
+            vk = v[:, :, :, -1].unsqueeze(-1).expand_as(gating_distribution)
+            mask_k = torch.lt(gating_distribution, vk)
+            gating_distribution = gating_distribution.masked_fill(mask_k, float('-inf'))
+        gating_distribution = F.softmax(gating_distribution, dim=-1)
+        
+        
+        # 获取每个专家的输出, #TODO:这一部分即使稀疏化后Expert也都参与了计算，并没有减少计算量
         expert_outputs = [expert(x) for expert in self.experts]  # List of [batch_size, len_seq, output_dim]
         expert_outputs = torch.stack(expert_outputs, dim=2) # [batch_size, len_seq, num_experts, output_dim]
 
         # 将专家的输出与相应的权重相乘，并求和
         output = torch.einsum('blnd,bln->bld', expert_outputs, gating_distribution)
         
-        return output
+        return output, gating_distribution

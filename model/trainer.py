@@ -13,6 +13,7 @@ from lib.utils import (
     dwa,  
 )
 from lib.metrics import test_metrics
+from model.moe.MoEScheduler import MoEScheduler
 
 class Trainer(object):
     def __init__(self, model, optimizer, scheduler, dataloader, graph, args):
@@ -27,6 +28,7 @@ class Trainer(object):
         self.scaler = dataloader['scaler']
         self.graph = graph
         self.args = args
+        self.moe_scheduler = MoEScheduler(top_k_init=args.num_experts)
 
         self.train_per_epoch = len(self.train_loader)
         if self.val_loader != None:
@@ -57,9 +59,10 @@ class Trainer(object):
             
             # input shape: n,l,v,c; graph shape: v,v;
             # import ipdb; ipdb.set_trace()
-            repr = self.model(data, self.graph) # nvc
+            repr, aux_loss = self.model(data, self.graph) # nvc
             loss = self.model.loss(repr, target, self.scaler)
             assert not torch.isnan(loss)
+            loss += aux_loss
             loss.backward()
 
             # gradient clipping
@@ -83,7 +86,7 @@ class Trainer(object):
         total_val_loss = 0
         with torch.no_grad():
             for batch_idx, (data, target) in enumerate(val_dataloader):
-                repr = self.model(data, self.graph)
+                repr, *_ = self.model(data, self.graph)
                 loss = self.model.loss(repr, target, self.scaler)
 
                 if not torch.isnan(loss):
@@ -128,6 +131,7 @@ class Trainer(object):
             val_dataloader = self.val_loader if self.val_loader != None else self.test_loader
             val_epoch_loss = self.val_epoch(epoch, val_dataloader)       
 
+            # adjust learning rate according to lr_scheduler
             if self.lr_scheduler is None:
                 cur_lr = self.lrate
             else:
@@ -188,7 +192,7 @@ class Trainer(object):
         y_true = []
         with torch.no_grad():
             for batch_idx, (data, target) in enumerate(dataloader):
-                repr = model(data, graph)                
+                repr, *_ = model(data, graph)                
                 pred_output = model.predict(repr)
 
                 y_true.append(target)

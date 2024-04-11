@@ -1,22 +1,29 @@
 ''' Define the Layers '''
 import torch.nn as nn
-from model.transformer.SubLayers import MultiHeadAttention, PositionwiseFeedForward
+from model.transformer.SubLayers import MultiHeadAttention, PositionwiseFeedForward, MoEFNN
 
 
 class EncoderLayer(nn.Module):
     ''' Compose with two layers '''
 
-    def __init__(self, d_model, d_inner, n_head, d_k, d_v, dropout=0.1):
+    def __init__(
+        self, d_model, d_inner, n_head, d_k, d_v, dropout=0.1, 
+        moe_status=False, num_experts=6, top_k = 2):
         super(EncoderLayer, self).__init__()
+        self.moe_status = moe_status
         self.slf_attn = MultiHeadAttention(n_head, d_model, d_k, d_v, dropout=dropout)
-        self.pos_ffn = PositionwiseFeedForward(d_model, d_inner, dropout=dropout)
+        self.pos_ffn = MoEFNN(d_model, num_experts, dropout=dropout)\
+            if moe_status else PositionwiseFeedForward(d_model, d_inner, dropout=dropout)
 
     def forward(self, enc_input, slf_attn_mask=None):
         enc_output, enc_slf_attn = self.slf_attn(
             enc_input, enc_input, enc_input, mask=slf_attn_mask)
-        enc_output = self.pos_ffn(enc_output)
-        return enc_output, enc_slf_attn
-
+        aux_loss = 0
+        if self.moe_status:
+            enc_output, aux_loss = self.pos_ffn(enc_output)
+        else:
+            enc_output = self.pos_ffn(enc_output) 
+        return enc_output, enc_slf_attn, aux_loss
 
 class DecoderLayer(nn.Module):
     ''' Compose with three layers '''

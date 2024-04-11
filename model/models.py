@@ -13,8 +13,9 @@ class STAtt(nn.Module):
         # spatial temporal encoder
         # self.encoder = STAttention(Kt=3, Ks=3, blocks=[[2, int(args.d_model//2), args.d_model], [args.d_model, int(args.d_model//2), args.d_model]], 
         #                 input_length=args.input_length, num_nodes=args.num_nodes, droprate=args.dropout)
+        args_moe = {"moe_status": args.moe_status, "num_experts": args.num_experts, "top_k": args.top_k}
         self.encoder = STAttention(
-            args.d_input, args.d_model, args.num_heads, args.mlp_ratio, args.encoder_depth, args.dropout)
+            args.d_input, args.d_model, args.num_heads, args.mlp_ratio, args.encoder_depth, args.dropout, args_moe=args_moe)
         
         # traffic flow prediction branch
         self.mlp = MLP(args.d_model, args.d_output)
@@ -22,8 +23,8 @@ class STAtt(nn.Module):
         self.args = args
     
     def forward(self, view, graph):
-        repr = self.encoder(view, graph) # view: n,l,v,c; graph: v,v 
-        return repr  #nl(=1)vc
+        repr, aux_loss = self.encoder(view, graph) # view: n,l,v,c; graph: v,v 
+        return repr, aux_loss  #nl(=1)vc
 
     def predict(self, repr):
         '''Predicting future traffic flow.

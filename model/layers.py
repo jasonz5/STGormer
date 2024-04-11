@@ -6,12 +6,14 @@ import torch.nn.init as init
 
 import sys
 from model.positional_encoding import PositionalEncoding
-from model.transformer_layers import TransformerLayers
+from model.transformer_layers import TrandformerEncoder
 
 
 class STAttention(nn.Module):
 
-    def __init__(self, in_channel, embed_dim, num_heads, mlp_ratio, encoder_depth, dropout, num_blocks=2, nlayers=3):
+    def __init__(
+        self, in_channel, embed_dim, num_heads, mlp_ratio, encoder_depth, dropout, num_blocks=2, nlayers=3, 
+        args_moe=None):
         super(STAttention, self).__init__()
         self.in_channel = in_channel
         self.embed_dim = embed_dim
@@ -29,7 +31,7 @@ class STAttention(nn.Module):
         self.project = FCLayer(in_channel, embed_dim)
         # blocks:(TST)*num_blocks
         self.st_encoder = nn.ModuleList([
-            TransformerLayers(embed_dim, encoder_depth, mlp_ratio, num_heads, dropout)
+            TrandformerEncoder(embed_dim, encoder_depth, mlp_ratio, num_heads, dropout, args_moe)
             for _ in range(num_blocks*nlayers)])
 
     def encoding(self, history_data):
@@ -45,12 +47,16 @@ class STAttention(nn.Module):
         # positional embedding
         encoder_input, self.pos_mat = self.positional_encoding(patches)# B, N, P, d
         
+        aux_loss = 0
         for i in range(0, len(self.st_encoder), self.nlayers):
-            encoder_input, *_ = self.st_encoder[i](encoder_input) # B, N, P, d
+            encoder_input, loss, *_ = self.st_encoder[i](encoder_input) # B, N, P, d
+            aux_loss += loss
             encoder_input = encoder_input.transpose(-2,-3)
-            encoder_input, *_ = self.st_encoder[i+1](encoder_input) # B, P, N, d
+            encoder_input, loss, *_ = self.st_encoder[i+1](encoder_input) # B, P, N, d
+            aux_loss += loss
             encoder_input = encoder_input.transpose(-2,-3)
-            encoder_input, *_ = self.st_encoder[i+2](encoder_input) # B, N, P, d
+            encoder_input, loss, *_ = self.st_encoder[i+2](encoder_input) # B, N, P, d
+            aux_loss += loss
         '''
         ## ST block 1 (deprecated)
         encoder_input = self.encoder_t11(encoder_input) # B, N, P, d
@@ -60,14 +66,14 @@ class STAttention(nn.Module):
         encoder_input = self.encoder_t13(encoder_input) # B, N, P, d
         '''
         
-        return encoder_input
+        return encoder_input, aux_loss
 
 
 
     def forward(self, history_data, graph=None): # history_data: n,l,v,c; graph: v,v 
-        repr = self.encoding(history_data) # B, N, P, d
+        repr, aux_loss = self.encoding(history_data) # B, N, P, d
         repr = repr.transpose(-2,-3) # n,l,v,c
-        return repr[:,-1:,:,:]
+        return repr[:,-1:,:,:], aux_loss
 
 
 

@@ -13,6 +13,11 @@ batch_size: 32
 test_batch_size: 32
 graph_file: data/NYCTaxi/adj_mx.npz # num_nodes 200 (20 x 10)
 
+## MoE
+moe_status: True
+num_experts: 6
+top_k: 2
+
 ## model 
 d_input: 2                  # means inflow and outflow
 d_output: 2                 # means inflow and outflow
