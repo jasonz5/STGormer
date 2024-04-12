@@ -15,7 +15,7 @@ graph_file: data/NYCBike1/adj_mx.npz # 128 x 128
 
 ## MoE
 moe_status: True
-num_experts: 6
+num_experts: 8
 top_k: 2
 
 ## model 
@@ -32,7 +32,7 @@ yita: 0.6                   # balance for inflow loss and outflow loss, $yita * 
 epochs: 250
 lr_init: 1.0e-4        # 0.001
 scheduler: 'MultiStepLR'
-milestones: [120, 140, 160, 180, 200]
+milestones: [80, 100, 120, 140, 160, 180]
 gamma: 0.9
 early_stop: True
 early_stop_patience: 25

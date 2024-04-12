@@ -78,8 +78,8 @@ def model_supervisor(args):
 
 if __name__=='__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--gpu_id', type=str, default='5', help='GPU ID to use')
-    parser.add_argument('--config_filename', default='configs/moest/NYCTaxi.yaml', 
+    parser.add_argument('--gpu_id', type=str, default='7', help='GPU ID to use')
+    parser.add_argument('--config_filename', default='configs/moest/NYCBike1.yaml', 
                     type=str, help='the configuration to use')
     args = parser.parse_args()
     
