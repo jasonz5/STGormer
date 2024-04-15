@@ -77,6 +77,7 @@ def model_supervisor(args):
     return results
 
 if __name__=='__main__':
+    # python main_moe.py --gpu_id=$1 --config_filename=configs_moe/$2.yaml
     parser = argparse.ArgumentParser()
     parser.add_argument('--gpu_id', type=str, default='7', help='GPU ID to use')
     parser.add_argument('--config_filename', default='configs/moest/NYCBike1.yaml', 
