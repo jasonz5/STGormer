@@ -11,7 +11,7 @@ import time
 import torch
 import os
 
-from model.models import STAtt
+from model.models import MoESTar
 from model.trainer import Trainer
 from lib.dataloader import get_dataloader
 from lib.utils import (
@@ -36,7 +36,7 @@ def model_supervisor(args):
     args.num_nodes = len(graph)
     
     ## init model and set optimizer
-    model = STAtt(args).to(args.device)
+    model = MoESTar(args).to(args.device)
     model_parameters = get_model_params([model])
     optimizer = torch.optim.Adam(
         params=model_parameters, 

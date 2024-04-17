@@ -95,6 +95,9 @@ class MoEFNN(nn.Module):
         return x, loss
 
 
+
+# The MoE below is realized by chatting with ChatGPT.
+# Current status: ignored
 class ExpertFNN(nn.Module):
     ''' A two-feed-forward-layer module '''
     def __init__(self, input_dim, hidden_dim, dropout=0.1):

@@ -7,9 +7,9 @@ from model.layers import (
     MLP, 
 )
 
-class STAtt(nn.Module):
+class MoESTar(nn.Module):
     def __init__(self, args):
-        super(STAtt, self).__init__()
+        super(MoESTar, self).__init__()
         # spatial temporal encoder
         # self.encoder = STAttention(Kt=3, Ks=3, blocks=[[2, int(args.d_model//2), args.d_model], [args.d_model, int(args.d_model//2), args.d_model]], 
         #                 input_length=args.input_length, num_nodes=args.num_nodes, droprate=args.dropout)

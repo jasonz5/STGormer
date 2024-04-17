@@ -1,5 +1,5 @@
 ## global
-seed:  56  # 1006 2021 101 31
+seed:  31  # 1006 2021 101 31
 device: cuda
 mode: train
 best_path: Null # experiments/NYCBike1/STAtt/lr0.0001/best_model.pth   # None 
@@ -35,7 +35,7 @@ scheduler: 'MultiStepLR'
 milestones: [80, 100, 120, 140, 160, 180]
 gamma: 0.9
 early_stop: True
-early_stop_patience: 25
+early_stop_patience: 15
 grad_norm: True
 max_grad_norm: 5
 use_dwa: False         # whether to use dwa for loss balance
