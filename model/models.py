@@ -45,5 +45,3 @@ class MoESTar(nn.Module):
                 (1 - self.args.yita) * self.mae(y_pred[..., 1], y_true[..., 1])
         return loss
     
-
-    
