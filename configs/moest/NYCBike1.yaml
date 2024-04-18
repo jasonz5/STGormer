@@ -2,7 +2,7 @@
 seed:  31  # 1006 2021 101 31
 device: cuda
 mode: train
-best_path: Null # experiments/NYCBike1/STAtt/lr0.0001/best_model.pth   # None 
+best_path: Null  #experiments/NYCBike1/5e5/best_model.pth   # Null 
 debug: False  
 
 ## data 
@@ -30,12 +30,12 @@ yita: 0.6                   # balance for inflow loss and outflow loss, $yita * 
 
 ## train
 epochs: 250
-lr_init: 1.0e-4        # 0.001
+lr_init: 2.0e-3        # 0.001
 scheduler: 'MultiStepLR'
-milestones: [80, 100, 120, 140, 160, 180]
-gamma: 0.9
+milestones: [1, 60, 90, 120, 150]
+gamma: 0.5
 early_stop: True
-early_stop_patience: 15
+early_stop_patience: 25
 grad_norm: True
 max_grad_norm: 5
 use_dwa: False         # whether to use dwa for loss balance
