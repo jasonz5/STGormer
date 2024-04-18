@@ -45,8 +45,19 @@ def model_supervisor(args):
         weight_decay=0, 
         amsgrad=False
     )
-    scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=args.milestones, gamma=args.gamma)
-
+    
+    # 根据参数选择Learning Rate Scheduler
+    if args.scheduler == 'StepLR':
+        scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=args.step_size, gamma=args.gamma)
+    elif args.scheduler == 'MultiStepLR':
+        scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=args.milestones, gamma=args.gamma)
+    elif args.scheduler == 'ExponentialLR':
+        scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=args.gamma)
+    elif args.scheduler == 'ReduceLROnPlateau':
+        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', factor=args.factor, patience=args.patience)
+    else:
+        scheduler = None
+        
     ## start training
     trainer = Trainer(
         model=model, 

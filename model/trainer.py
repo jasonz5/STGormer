@@ -135,8 +135,12 @@ class Trainer(object):
             if self.lr_scheduler is None:
                 cur_lr = self.lrate
             else:
-                cur_lr = self.lr_scheduler.get_last_lr()[0]
-                self.lr_scheduler.step()
+                # cur_lr = self.lr_scheduler.get_last_lr()[0]
+                cur_lr = self.optimizer.param_groups[0]['lr']
+                if self.args.scheduler == 'ReduceLROnPlateau':
+                    self.lr_scheduler.step(train_epoch_loss)
+                else:
+                    self.lr_scheduler.step()
             if not self.args.debug:
                 self.training_stats.update((epoch, train_epoch_loss, val_epoch_loss, cur_lr)) 
                 
