@@ -8,11 +8,11 @@ class EncoderLayer(nn.Module):
 
     def __init__(
         self, d_model, d_inner, n_head, d_k, d_v, dropout=0.1, 
-        moe_status=False, num_experts=6, top_k = 2):
+        moe_status=False, num_experts=6, moe_dropout=0.1, top_k = 2):
         super(EncoderLayer, self).__init__()
         self.moe_status = moe_status
         self.slf_attn = MultiHeadAttention(n_head, d_model, d_k, d_v, dropout=dropout)
-        self.pos_ffn = MoEFNN(d_model, num_experts, dropout=dropout)\
+        self.pos_ffn = MoEFNN(d_model, num_experts, dropout=moe_dropout)\
             if moe_status else PositionwiseFeedForward(d_model, d_inner, dropout=dropout)
 
     def forward(self, enc_input, slf_attn_mask=None):

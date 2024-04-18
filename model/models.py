@@ -13,9 +13,11 @@ class MoESTar(nn.Module):
         # spatial temporal encoder
         # self.encoder = STAttention(Kt=3, Ks=3, blocks=[[2, int(args.d_model//2), args.d_model], [args.d_model, int(args.d_model//2), args.d_model]], 
         #                 input_length=args.input_length, num_nodes=args.num_nodes, droprate=args.dropout)
-        args_moe = {"moe_status": args.moe_status, "num_experts": args.num_experts, "top_k": args.top_k}
+        args_moe = {"moe_status": args.moe_status, "num_experts": args.num_experts,
+                    "moe_dropout": args.moe_dropout, "top_k": args.top_k}
         self.encoder = STAttention(
-            args.d_input, args.d_model, args.num_heads, args.mlp_ratio, args.encoder_depth, args.dropout, args_moe=args_moe)
+            args.d_input, args.d_model, args.num_heads, args.mlp_ratio, args.encoder_depth, args.dropout,
+            args_moe = args_moe, moe_position = args.moe_position)
         
         # traffic flow prediction branch
         self.mlp = MLP(args.d_model, args.d_output)

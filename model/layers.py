@@ -13,7 +13,7 @@ class STAttention(nn.Module):
 
     def __init__(
         self, in_channel, embed_dim, num_heads, mlp_ratio, encoder_depth, dropout, num_blocks=2, nlayers=3, 
-        args_moe=None):
+        args_moe = None, moe_position = None):
         super(STAttention, self).__init__()
         self.in_channel = in_channel
         self.embed_dim = embed_dim
@@ -29,10 +29,34 @@ class STAttention(nn.Module):
         #TODO:之后可以考虑加入时间和空间维度的位置编码
         
         self.project = FCLayer(in_channel, embed_dim)
-        # blocks:(TST)*num_blocks
+        
+        ## 这里构造ST-Transformer块，并决定在哪一层MoE化
+        moe_posList = []
+        if moe_position == 'Full':
+            moe_posList = [1, 1, 1, 1, 1, 1]
+        elif moe_position == 'Half':
+            moe_posList = [0, 0, 0, 1, 1, 1]
+        elif moe_position == 'woS':
+            moe_posList = [1, 0, 1, 1, 0, 1]
+        elif moe_position == 'woT':
+            moe_posList = [0, 1, 0, 0, 1, 0]
+        elif moe_position == 'woST':
+            moe_posList = [0, 0, 0, 0, 0, 0]
+        elif moe_position is None:
+            print("moe_position is None, should have a value")
+
+        args_wo_moe = args_moe.copy()
+        args_wo_moe["moe_status"] = False
         self.st_encoder = nn.ModuleList([
-            TrandformerEncoder(embed_dim, encoder_depth, mlp_ratio, num_heads, dropout, args_moe)
-            for _ in range(num_blocks*nlayers)])
+            TrandformerEncoder(embed_dim, encoder_depth, mlp_ratio, num_heads, dropout,\
+                args_moe if moe_posList[i]==1 else args_wo_moe)
+            for i in range(num_blocks*nlayers)])
+        
+        # blocks:(TST)*num_blocks
+        # self.st_encoder = nn.ModuleList([
+        #     TrandformerEncoder(embed_dim, encoder_depth, mlp_ratio, num_heads, dropout, args_moe)
+        #     for _ in range(num_blocks*nlayers)])
+
 
     def encoding(self, history_data):
         """

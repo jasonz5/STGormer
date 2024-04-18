@@ -16,7 +16,9 @@ graph_file: data/NYCBike1/adj_mx.npz # 128 x 128
 ## MoE
 moe_status: True
 num_experts: 8
+moe_dropout: 0.1
 top_k: 2
+moe_position: 'Half'  # Full / Half / woS / woT / woST
 
 ## model 
 d_input: 2                  # means inflow and outflow
@@ -32,7 +34,7 @@ yita: 0.6                   # balance for inflow loss and outflow loss, $yita * 
 epochs: 250
 lr_init: 2.0e-3        # 0.001
 scheduler: 'MultiStepLR'
-milestones: [1, 60, 90, 120, 150]
+milestones: [1, 60, 90, 120, 150] #[1, 50, 80, 100, 120]
 gamma: 0.5
 early_stop: True
 early_stop_patience: 25
