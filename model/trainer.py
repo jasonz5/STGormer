@@ -138,7 +138,7 @@ class Trainer(object):
                 # cur_lr = self.lr_scheduler.get_last_lr()[0]
                 cur_lr = self.optimizer.param_groups[0]['lr']
                 if self.args.scheduler == 'ReduceLROnPlateau':
-                    self.lr_scheduler.step(train_epoch_loss)
+                    self.lr_scheduler.step(val_epoch_loss)
                 else:
                     self.lr_scheduler.step()
             if not self.args.debug:

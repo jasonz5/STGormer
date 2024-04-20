@@ -29,16 +29,18 @@ mlp_ratio: 4
 encoder_depth: 1
 dropout: 0.1
 yita: 0.6                   # balance for inflow loss and outflow loss, $yita * inflow + (1 - yita) * outflow$
+sparse: False
+sparseK: 32
 
 ## train
 epochs: 250
 lr_init: 1.0e-3        # 0.001
 scheduler: 'ReduceLROnPlateau' # StepLR MultiStepLR ExponentialLR ReduceLROnPlateau
 step_size: 30 # StepLR
-milestones: [120, 140, 160, 180, 200] # MultiStepLR
+milestones: [1, 50, 80, 100, 120] # MultiStepLR
 factor: 0.8 # ReduceLROnPlateau
 patience: 10 # ReduceLROnPlateau
-gamma: 0.9 # StepLR MultiStepLR ExponentialLR
+gamma: 0.5 # StepLR MultiStepLR ExponentialLR
 # MultiStepLR 2.0e-3 [1, 60, 90, 120, 150] 0.5
 # MultiStepLR 2.0e-3 [1, 50, 80, 100, 120] 0.5
 # MultiStepLR 1.0e-4 [120, 140, 160, 180, 200] 0.9
