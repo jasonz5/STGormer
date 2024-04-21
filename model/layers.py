@@ -71,9 +71,10 @@ class STAttention(nn.Module):
         # positional embedding
         encoder_input, self.pos_mat = self.positional_encoding(patches)# B, N, P, d
         
-        aux_loss = 0
+        aux_loss = torch.tensor(0, dtype=torch.float32).to('cuda')
         for i in range(0, len(self.st_encoder), self.nlayers):
             encoder_input, loss, *_ = self.st_encoder[i](encoder_input) # B, N, P, d
+            # import ipdb; ipdb.set_trace()
             aux_loss += loss
             encoder_input = encoder_input.transpose(-2,-3)
             encoder_input, loss, *_ = self.st_encoder[i+1](encoder_input) # B, P, N, d

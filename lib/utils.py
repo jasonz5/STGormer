@@ -1,5 +1,6 @@
 import os 
 import random
+import math
 import torch
 import numpy as np
 from datetime import datetime
@@ -32,6 +33,18 @@ def get_model_params(model_list):
         if m != None:
             model_parameters += list(m.parameters())
     return model_parameters
+
+def get_param_groups(model, base_learning_rate, num_experts):
+    # Scale the learning rate for each expert by 1 / sqrt(num_experts)
+    per_expert_lr = base_learning_rate / math.sqrt(num_experts)
+    param_groups = []
+    for name, param in model.named_parameters():
+        if "pos_ffn" in name:
+            param_groups.append({ "params": param, "lr": per_expert_lr })
+        else:
+            param_groups.append({"params": param, "lr": base_learning_rate })
+    return param_groups
+
 
 def get_log_dir(args):
     current_time = datetime.now().strftime('%Y%m%d-%H%M%S')

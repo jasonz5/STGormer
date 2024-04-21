@@ -17,6 +17,7 @@ from lib.dataloader import get_dataloader
 from lib.utils import (
     init_seed,
     get_model_params,
+    get_param_groups,
     load_graph, 
 )
 
@@ -37,14 +38,18 @@ def model_supervisor(args):
     
     ## init model and set optimizer
     model = MoESTar(args).to(args.device)
-    model_parameters = get_model_params([model])
-    optimizer = torch.optim.Adam(
-        params=model_parameters, 
-        lr=args.lr_init, 
-        eps=1.0e-8, 
-        weight_decay=0, 
-        amsgrad=False
-    )
+    if args.moe_status == True:
+        model_parameters = get_param_groups(model, args.lr_init, args.num_experts)
+        optimizer = torch.optim.Adam(params=model_parameters)
+    else:
+        model_parameters = get_model_params([model])
+        optimizer = torch.optim.Adam(
+            params=model_parameters, 
+            lr=args.lr_init, 
+            eps=1.0e-8, 
+            weight_decay=0, 
+            amsgrad=False
+        )
     
     # 根据参数选择Learning Rate Scheduler
     if args.scheduler == 'StepLR':
