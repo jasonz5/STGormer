@@ -36,7 +36,7 @@ def get_model_params(model_list):
 
 def get_param_groups(model, base_learning_rate, num_experts):
     # Scale the learning rate for each expert by 1 / sqrt(num_experts)
-    per_expert_lr = base_learning_rate / math.sqrt(num_experts)
+    per_expert_lr = base_learning_rate / math.sqrt(num_experts//2)
     param_groups = []
     for name, param in model.named_parameters():
         if "pos_ffn" in name:

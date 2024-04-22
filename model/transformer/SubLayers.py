@@ -4,6 +4,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from model.transformer.Modules import ScaledDotProductAttention
+from model.stmoe.st_moe_pytorch import MoE as STMoE, SparseMoEBlock
 from model.moe.mixture_of_experts import MoE, HeirarchicalMoE, Experts
 
 ''' Adjust according to STGSP '''
@@ -97,6 +98,36 @@ class MoEFNN(nn.Module):
         x = self.layer_norm(x)
         return x, loss
 
+class STMoEFNN(nn.Module):
+    ''' MOE FNN module '''
+    def __init__(self, d_in, num_experts, d_hid=None, dropout=0.1, moe_add_ff=False):
+        super(STMoEFNN, self).__init__()
+        self.moefnn = STMoE(
+            dim = d_in,
+            num_experts = num_experts,      # increase the experts (# parameters) of your model without increasing computation
+            gating_top_n = 2,               # default to top 2 gating, but can also be more (3 was tested in the paper with a lower threshold)
+            threshold_train = 0.2,          # at what threshold to accept a token to be routed to second expert and beyond - 0.2 was optimal for 2 expert routing, and apparently should be lower for 3
+            threshold_eval = 0.2,
+            capacity_factor_train = 1.25,   # experts have fixed capacity per batch. we need some extra capacity in case gating is not perfectly balanced.
+            capacity_factor_eval = 2.,      # capacity_factor_* should be set to a value >=1
+            balance_loss_coef = 1e-2,       # multiplier on the auxiliary expert balancing auxiliary loss
+            router_z_loss_coef = 1e-3,      # loss weight for router z-loss
+        )
+        self.moe_block = SparseMoEBlock(
+            self.moefnn,
+            add_ff_before = moe_add_ff,
+            add_ff_after = moe_add_ff
+        )
+        self.layer_norm = nn.LayerNorm(d_in)
+        self.dropout = nn.Dropout(dropout)
+
+    def forward(self, x):
+        # input: (B, N, D) 
+        # return: (B, N, D), (1,) (1,), (1,)
+        x, total_aux_loss, balance_loss, router_z_loss = self.moe_block(x) 
+        x = self.dropout(x)
+        x = self.layer_norm(x)
+        return x, total_aux_loss.item()
 
 
 # The MoE below is realized by chatting with ChatGPT.
