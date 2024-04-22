@@ -5,7 +5,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from model.transformer.Modules import ScaledDotProductAttention
 from model.stmoe.st_moe_pytorch import MoE as STMoE, SparseMoEBlock
-from model.moe.mixture_of_experts import MoE, HeirarchicalMoE, Experts
+from model.sharedmoe.mixture_of_experts import MoE, Experts
 
 ''' Adjust according to STGSP '''
 

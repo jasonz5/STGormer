@@ -3,7 +3,7 @@ seed:  31  # 1006 2021 101 31
 device: cuda
 mode: train
 best_path: Null  #experiments/NYCBike1/5e5/best_model.pth   # Null 
-debug: False  
+debug: True  
 
 ## data 
 data_dir: data

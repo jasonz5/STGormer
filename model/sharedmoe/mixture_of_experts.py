@@ -250,15 +250,24 @@ class MoE(nn.Module):
         self.loss_coef = loss_coef
 
     def forward(self, inputs, **kwargs):
+        import ipdb; ipdb.set_trace()
         b, n, d, e = *inputs.shape, self.num_experts
+        # ex. b-4096(32*128) n-19, d-64, e-8
         dispatch_tensor, combine_tensor, loss = self.gate(inputs)
+        # ex. [4096, 19, 8, 4], [4096, 19, 8, 4], 1
         expert_inputs = torch.einsum('bnd,bnec->ebcd', inputs, dispatch_tensor)
-
+        # ex. [8, 4096, 4, 64]
+        
         # Now feed the expert inputs through the experts.
         orig_shape = expert_inputs.shape
+        # ex. torch.Size([8, 4096, 4, 64])
         expert_inputs = expert_inputs.reshape(e, -1, d)
+        # ex. [8, 16384, 64]
         expert_outputs = self.experts(expert_inputs)
+        # ex. [8, 16384, 64]
         expert_outputs = expert_outputs.reshape(*orig_shape)
+        # ex. [8, 4096, 4, 64]
 
         output = torch.einsum('ebcd,bnec->bnd', expert_outputs, combine_tensor)
+        # ex. [4096, 19, 64]
         return output, loss * self.loss_coef
