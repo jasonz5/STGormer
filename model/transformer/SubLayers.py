@@ -5,7 +5,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from model.transformer.Modules import ScaledDotProductAttention
 from model.stmoe.st_moe_pytorch import MoE as STMoE, SparseMoEBlock
-# from model.sharedmoe.mixture_of_experts import MoE, Experts
+from model.sharedmoe.mixture_of_experts import RoutedMoE, Experts
 from model.moe.mixture_of_experts import MoE, Experts
 
 ''' Adjust according to STGSP '''
@@ -81,10 +81,51 @@ class PositionwiseFeedForward(nn.Module):
         x += residual
         x = self.layer_norm(x)
         return x
+
+class SharedMoEFNN(nn.Module):
+    ''' SharedMoE FNN module '''
+    def __init__(self, input_dim, num_experts, hidden_dim=None, dropout=0.1, 
+                 expertWeightsAda=False, expertWeights = None):
+        super(SharedMoEFNN, self).__init__()
+        self.sharedExpert = nn.Sequential(
+            nn.Linear(input_dim, hidden_dim),
+            nn.ReLU(),
+            nn.Linear(hidden_dim, input_dim)
+        )
+        self.selectedExpert = RoutedMoE(input_dim, num_experts, hidden_dim)
+        self.layer_norm = nn.LayerNorm(input_dim)
+        self.dropout = nn.Dropout(dropout)
+
+        # shared/selected expert 权重分配
+        self.expertWeightsAda = expertWeightsAda
+        if self.expertWeightsAda:
+            self.expertWeights = nn.Sequential(
+                nn.Linear(input_dim, 2),
+                nn.Softmax(dim=-1)
+            )
+        else:
+            self.expertWeights = expertWeights
+
+    def forward(self, x):
+        residual = x #[b,n,d]
+        x1 = self.sharedExpert(x)
+        x2, loss = self.selectedExpert(x)
+        
+        # shared/selected expert 权重分配
+        if self.expertWeightsAda:
+            balance = self.expertWeights(x)  #[b,n,2]
+            x = balance[..., 0:1]*x1 + balance[..., 1:2]*x2
+        else:
+            x = self.expertWeights[0]*x1 + self.expertWeights[1]*x2
+        # import ipdb; ipdb.set_trace()
+        x = self.dropout(x)
+        x += residual
+        x = self.layer_norm(x)
+        return x, loss
+    
     
 class MoEFNN(nn.Module):
     ''' MOE FNN module '''
-
     def __init__(self, d_in, num_experts, d_hid=None, dropout=0.1):
         super(MoEFNN, self).__init__()
         self.moefnn = MoE(d_in, num_experts, d_hid)
@@ -100,7 +141,7 @@ class MoEFNN(nn.Module):
         return x, loss
 
 class STMoEFNN(nn.Module):
-    ''' MOE FNN module '''
+    ''' ST-MOE FNN module '''
     def __init__(self, d_in, num_experts, d_hid=None, dropout=0.1, moe_add_ff=False):
         super(STMoEFNN, self).__init__()
         self.moefnn = STMoE(

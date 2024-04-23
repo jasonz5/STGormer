@@ -131,7 +131,6 @@ class Top2Gating(nn.Module):
 
         # FIND TOP 2 EXPERTS PER POSITON
         # Find the top expert for each position. shape=[batch, group]
-        import ipdb; ipdb.set_trace()
         gate_1, index_1 = top1(raw_gates) # ex. [4096, 19]  [4096, 19]
         mask_1 = F.one_hot(index_1, num_gates).float()  # ex. [4096, 19, 8]
         density_1_proxy = raw_gates
@@ -166,20 +165,6 @@ class Top2Gating(nn.Module):
         density_1_proxy = density_1_proxy.mean(dim=-2) # ex. [4096, 8]
         loss = (density_1_proxy * density_1).mean() * float(num_gates ** 2)
 
-        # Depending on the policy in the hparams, we may drop out some of the
-        # second-place experts.
-        if policy == "all":
-            pass
-        elif policy == "none":
-            mask_2 = torch.zeros_like(mask_2)
-        elif policy == "threshold":
-            mask_2 *= (gate_2 > threshold).float()
-        elif policy == "random":
-            probs = torch.zeros_like(gate_2).uniform_(0., 1.)
-            mask_2 *= (probs < (gate_2 / max(threshold, self.eps))).float().unsqueeze(-1)
-        else:
-            raise ValueError(f"Unknown policy {policy}")
-
         # Each sequence sends (at most?) expert_capacity positions to each expert.
         # Static expert_capacity dimension is needed for expert batch sizes
         expert_capacity = min(group_size, int((group_size * capacity_factor) / num_gates))
@@ -202,24 +187,12 @@ class Top2Gating(nn.Module):
         # Weight assigned to first expert.  [batch, group]
         gate_1 *= mask_1_flat  # ex. [4096, 19]
 
-        position_in_expert_2 = cumsum_exclusive(mask_2, dim=-2) + mask_1_count  # ex. [4096, 19, 8]
-        position_in_expert_2 *= mask_2   # ex. [4096, 19, 8]
-        mask_2 *= (position_in_expert_2 < expert_capacity_f).float() # ex. [4096, 19, 8]
-        mask_2_flat = mask_2.sum(dim=-1)  # ex. [4096, 19]
-
-        position_in_expert_2 = position_in_expert_2.sum(dim=-1) # ex. [4096, 19]
-        gate_2 *= mask_2_flat # ex. [4096, 19]
-        
         # [batch, group, experts, expert_capacity]
         combine_tensor = (
             gate_1[..., None, None]
             * mask_1_flat[..., None, None]
             * F.one_hot(index_1, num_gates)[..., None]
-            * safe_one_hot(position_in_expert_1.long(), expert_capacity)[..., None, :] +
-            gate_2[..., None, None]
-            * mask_2_flat[..., None, None]
-            * F.one_hot(index_2, num_gates)[..., None]
-            * safe_one_hot(position_in_expert_2.long(), expert_capacity)[..., None, :]
+            * safe_one_hot(position_in_expert_1.long(), expert_capacity)[..., None, :]
         ) # torch.Size([4096, 19, 8, 4])
 
         dispatch_tensor = combine_tensor.bool().to(combine_tensor) # torch.Size([4096, 19, 8, 4])
@@ -227,7 +200,7 @@ class Top2Gating(nn.Module):
 
 # plain mixture of experts
 
-class MoE(nn.Module):
+class RoutedMoE(nn.Module):
     def __init__(self,
         dim,
         num_experts = 16,

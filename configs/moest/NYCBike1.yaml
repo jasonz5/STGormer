@@ -2,8 +2,8 @@
 seed:  31  # 1006 2021 101 31
 device: cuda
 mode: train
-best_path: Null  #experiments/NYCBike1/5e5/best_model.pth   # Null 
-debug: True  
+best_path: Null #experiments/NYCBike1/MoESTarAblation/e8-Full-mlr/best_model.pth   # Null 
+debug: False  
 
 ## data 
 data_dir: data
@@ -14,13 +14,15 @@ test_batch_size: 32
 graph_file: data/NYCBike1/adj_mx.npz # 128 x 128
 
 ## MoE
-moe_status: True # important #
+moe_status: 'SharedMoE' # MoE / SharedMoE / STMoE / None
 num_experts: 8
 moe_dropout: 0.1
-top_k: 2
+top_k: 1
 moe_mlr: True  # important #
-moe_add_ff: False
+moe_add_ff: False # param 4 STMoE
 moe_position: 'Full'  # Full / Half / woS / woT / woST
+expertWeightsAda: False # param 4 SharedMoE
+expertWeights: [0.8, 0.2] # param 4 SharedMoE
 
 ## model 
 d_input: 2                  # means inflow and outflow

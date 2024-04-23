@@ -39,7 +39,7 @@ def model_supervisor(args):
     ## init model and set optimizer
     model = MoESTar(args).to(args.device)
     if args.moe_mlr == True:
-        model_parameters = get_param_groups(model, args.lr_init, args.num_experts)
+        model_parameters = get_param_groups(model, args.lr_init, args.num_experts, args.top_k, args.moe_status)
         optimizer = torch.optim.Adam(params=model_parameters)
     else:
         model_parameters = get_model_params([model])

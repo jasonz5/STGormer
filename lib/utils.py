@@ -34,15 +34,21 @@ def get_model_params(model_list):
             model_parameters += list(m.parameters())
     return model_parameters
 
-def get_param_groups(model, base_learning_rate, num_experts):
+def get_param_groups(model, base_learning_rate, num_experts, top_k, moe_status):
     # Scale the learning rate for each expert by 1 / sqrt(num_experts)
-    per_expert_lr = base_learning_rate / math.sqrt(num_experts//2)
+    per_expert_lr = base_learning_rate / math.sqrt(num_experts//top_k)
     param_groups = []
     for name, param in model.named_parameters():
-        if "pos_ffn" in name:
-            param_groups.append({ "params": param, "lr": per_expert_lr })
+        if moe_status == "SharedMoE":
+            if "selectedExpert" in name:
+                param_groups.append({ "params": param, "lr": per_expert_lr })
+            else:
+                param_groups.append({"params": param, "lr": base_learning_rate })
         else:
-            param_groups.append({"params": param, "lr": base_learning_rate })
+            if "pos_ffn" in name:
+                param_groups.append({ "params": param, "lr": per_expert_lr })
+            else:
+                param_groups.append({"params": param, "lr": base_learning_rate })
     return param_groups
 
 
