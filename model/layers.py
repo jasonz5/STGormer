@@ -46,7 +46,7 @@ class STAttention(nn.Module):
             print("moe_position is None, should have a value")
 
         args_wo_moe = args_moe.copy()
-        args_wo_moe["moe_status"] = False
+        args_wo_moe["moe_status"] = None
         self.st_encoder = nn.ModuleList([
             TrandformerEncoder(embed_dim, encoder_depth, mlp_ratio, num_heads, dropout,\
                 args_moe if moe_posList[i]==1 else args_wo_moe)

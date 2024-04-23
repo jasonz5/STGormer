@@ -1,9 +1,9 @@
 ## global
-seed:  31  # 1006 2021 101 31
+seed:  31  # 11 21 31 41 51
 device: cuda
 mode: train
 best_path: Null #experiments/NYCBike1/MoESTarAblation/e8-Full-mlr/best_model.pth   # Null 
-debug: False  
+debug: True  
 
 ## data 
 data_dir: data
@@ -33,21 +33,24 @@ mlp_ratio: 4
 encoder_depth: 1
 dropout: 0.1
 yita: 0.6                   # balance for inflow loss and outflow loss, $yita * inflow + (1 - yita) * outflow$
+## Sparse ScaledDotProduct Attention
 sparse: False
 sparseK: 32
 
 ## train
 epochs: 250
-lr_init: 2.0e-3        # 0.001
+## learning rate ##
+lr_init: 2.0e-3
 scheduler: 'MultiStepLR' # StepLR MultiStepLR ExponentialLR ReduceLROnPlateau(效果一般)
 step_size: 30 # StepLR
 milestones: [1, 60, 90, 120, 150] # MultiStepLR
 factor: 0.8 # ReduceLROnPlateau
 patience: 10 # ReduceLROnPlateau
 gamma: 0.5 # StepLR MultiStepLR ExponentialLR
-# MultiStepLR 2.0e-3 [1, 60, 90, 120, 150] 0.5
-# MultiStepLR 2.0e-3 [1, 50, 80, 100, 120] 0.5
-# MultiStepLR 1.0e-4 [120, 140, 160, 180, 200] 0.9
+# 1. MultiStepLR 2.0e-3 [1, 60, 90, 120, 150] 0.5
+# 2. MultiStepLR 2.0e-3 [1, 50, 80, 100, 120] 0.5 相比1，MAE差，MAPE好些
+# 3. MultiStepLR 1.0e-4 [120, 140, 160, 180, 200] 0.9
+## learning rate ##
 early_stop: True
 early_stop_patience: 25
 grad_norm: True
