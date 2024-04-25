@@ -2,7 +2,6 @@ import torch
 from torch import nn
 from positional_encodings.torch_encodings import PositionalEncoding1D, PositionalEncoding2D, PositionalEncoding3D, Summer
 
-#TODO: 研究时空维度的编码属性，以及空间维度grid如何更好的位置编码
 class PositionalEncoding(nn.Module):
     """Positional encoding."""
 

@@ -26,7 +26,6 @@ class STAttention(nn.Module):
         # positional encoding
         self.pos_mat=None
         self.positional_encoding = PositionalEncoding()
-        #TODO:之后可以考虑加入时间和空间维度的位置编码
         
         self.project = FCLayer(in_channel, embed_dim)
         
