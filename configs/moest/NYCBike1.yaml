@@ -12,6 +12,10 @@ input_length: 19 # 4+5*3
 batch_size: 32
 test_batch_size: 32
 graph_file: data/NYCBike1/adj_mx.npz # 128 x 128
+num_nodes: 128
+
+## Frequency
+fft_status: True
 
 ## MoE
 moe_status: 'SharedMoE' # MoE / SharedMoE / STMoE / None
@@ -25,7 +29,7 @@ expertWeightsAda: False # param 4 SharedMoE
 expertWeights: [0.8, 0.2] # param 4 SharedMoE
 
 ## model 
-layers: ['T','S','T','S','T','S'] # ['T','S','T','T','S','T'] ['T','S','T','S','T','S'] ['S','T','S','T','S','T']
+layers: ['T','S','T','T','S','T'] # ['T','S','T','T','S','T'] ['T','S','T','S','T','S'] ['S','T','S','T','S','T']
 d_input: 2                  # means inflow and outflow
 d_output: 2                 # means inflow and outflow
 d_model: 64

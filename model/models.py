@@ -6,6 +6,7 @@ from .layers import (
     STAttention, 
     MLP, 
 )
+from .utils.filter import FilterLayer
 
 class MoESTar(nn.Module):
     def __init__(self, args):
@@ -25,8 +26,17 @@ class MoESTar(nn.Module):
         self.mlp = MLP(args.d_model, args.d_output)
         self.mae = masked_mae_loss(mask_value=5.0)
         self.args = args
+        # Filter 
+        self.fft_status = args.fft_status
+        self.filter = FilterLayer(args.num_nodes, args.input_length)
     
     def forward(self, view, graph):
+        # Filter 
+        if self.fft_status:
+            # view: n,l,v,c -> n,c,v,l -> n,l,v,c
+            view = view.permute(0, 3, 2, 1)
+            view = self.filter(view)
+            view = view.permute(0, 3, 2, 1)
         repr, aux_loss = self.encoder(view, graph) # view: n,l,v,c; graph: v,v 
         return repr, aux_loss  #nl(=1)vc
 
