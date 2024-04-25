@@ -5,14 +5,14 @@ import torch.nn.functional as F
 import torch.nn.init as init
 
 import sys
-from model.positional_encoding import PositionalEncoding
-from model.transformer_layers import TrandformerEncoder
+from .positional_encoding import PositionalEncoding
+from .transformer_layers import TrandformerEncoder
 
 
 class STAttention(nn.Module):
 
     def __init__(
-        self, in_channel, embed_dim, num_heads, mlp_ratio, encoder_depth, dropout, num_blocks=2, nlayers=3, 
+        self, in_channel, embed_dim, num_heads, mlp_ratio, encoder_depth, dropout, layers = None, 
         args_moe = None, moe_position = None):
         super(STAttention, self).__init__()
         self.in_channel = in_channel
@@ -20,8 +20,7 @@ class STAttention(nn.Module):
         self.num_heads = num_heads
         self.mlp_ratio = mlp_ratio
         self.encoder_depth = encoder_depth
-        self.num_blocks = num_blocks
-        self.nlayers = nlayers
+        self.layers = layers
 
         # positional encoding
         self.pos_mat=None
@@ -29,33 +28,15 @@ class STAttention(nn.Module):
         
         self.project = FCLayer(in_channel, embed_dim)
         
-        ## 这里构造ST-Transformer块，并决定在哪一层MoE化
-        moe_posList = []
-        if moe_position == 'Full':
-            moe_posList = [1, 1, 1, 1, 1, 1]
-        elif moe_position == 'Half':
-            moe_posList = [0, 0, 0, 1, 1, 1]
-        elif moe_position == 'woS':
-            moe_posList = [1, 0, 1, 1, 0, 1]
-        elif moe_position == 'woT':
-            moe_posList = [0, 1, 0, 0, 1, 0]
-        elif moe_position == 'woST':
-            moe_posList = [0, 0, 0, 0, 0, 0]
-        elif moe_position is None:
-            print("moe_position is None, should have a value")
-
+        # 确定MoE化位置
+        moe_posList = generate_moe_posList(layers, moe_position)
+        
         args_wo_moe = args_moe.copy()
         args_wo_moe["moe_status"] = None
         self.st_encoder = nn.ModuleList([
             TrandformerEncoder(embed_dim, encoder_depth, mlp_ratio, num_heads, dropout,\
                 args_moe if moe_posList[i]==1 else args_wo_moe)
-            for i in range(num_blocks*nlayers)])
-        
-        # blocks:(TST)*num_blocks
-        # self.st_encoder = nn.ModuleList([
-        #     TrandformerEncoder(embed_dim, encoder_depth, mlp_ratio, num_heads, dropout, args_moe)
-        #     for _ in range(num_blocks*nlayers)])
-
+            for i in range(len(layers))])
 
     def encoding(self, history_data):
         """
@@ -71,35 +52,35 @@ class STAttention(nn.Module):
         encoder_input, self.pos_mat = self.positional_encoding(patches)# B, N, P, d
         
         aux_loss = torch.tensor(0, dtype=torch.float32).to('cuda')
-        for i in range(0, len(self.st_encoder), self.nlayers):
-            encoder_input, loss, *_ = self.st_encoder[i](encoder_input) # B, N, P, d
-            # import ipdb; ipdb.set_trace()
+        layers_full = ['T'] + self.layers
+        for i in range(1, len(layers_full)):
+            if layers_full[i] != layers_full[i-1]:
+                encoder_input = encoder_input.transpose(-2,-3)
+            encoder_input, loss, *_ = self.st_encoder[i-1](encoder_input)
             aux_loss += loss
-            encoder_input = encoder_input.transpose(-2,-3)
-            encoder_input, loss, *_ = self.st_encoder[i+1](encoder_input) # B, P, N, d
-            aux_loss += loss
-            encoder_input = encoder_input.transpose(-2,-3)
-            encoder_input, loss, *_ = self.st_encoder[i+2](encoder_input) # B, N, P, d
-            aux_loss += loss
-        '''
-        ## ST block 1 (deprecated)
-        encoder_input = self.encoder_t11(encoder_input) # B, N, P, d
-        encoder_input = encoder_input.transpose(-2,-3)
-        encoder_input = self.encoder_s12(encoder_input) # B, P, N, d
-        encoder_input = encoder_input.transpose(-2,-3)
-        encoder_input = self.encoder_t13(encoder_input) # B, N, P, d
-        '''
-        
         return encoder_input, aux_loss
-
-
 
     def forward(self, history_data, graph=None): # history_data: n,l,v,c; graph: v,v 
         repr, aux_loss = self.encoding(history_data) # B, N, P, d
         repr = repr.transpose(-2,-3) # n,l,v,c
         return repr[:,-1:,:,:], aux_loss
 
-
+def generate_moe_posList(layers, moe_position):
+    length = len(layers)
+    if moe_position == 'Full':
+        return [1] * length
+    elif moe_position == 'Half':
+        half_length = length // 2
+        return [0] * half_length + [1] * (length - half_length)
+    elif moe_position == 'woS':
+        return [0 if layer == 'S' else 1 for layer in layers]
+    elif moe_position == 'woT':
+        return [0 if layer == 'T' else 1 for layer in layers]
+    elif moe_position == 'woST':
+        return [0] * length
+    else:
+        print("moe_position is None or invalid, should have a valid value")
+        return None
 
 ########################################
 ## An MLP predictor
@@ -147,5 +128,12 @@ def main():
         with contextlib.redirect_stdout(log_file):
             summary(model, input_size=(1, 19, 128, 2), device=device)
 
+def test():
+    layers = ['T', 'S', 'T', 'T', 'S', 'T']
+    moe_position = 'Half'
+    moe_posList = generate_moe_posList(layers, moe_position)
+    print(moe_posList)
+    
+    
 if __name__ == '__main__':
-    main()
+    test()

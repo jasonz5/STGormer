@@ -1,6 +1,6 @@
 import math
 from torch import nn
-from model.transformer.Layers import EncoderLayer
+from .transformer.Layers import EncoderLayer
 
 class TrandformerEncoder(nn.Module):
     ''' A encoder model with self attention mechanism. '''

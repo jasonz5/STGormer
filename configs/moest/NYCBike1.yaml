@@ -1,9 +1,9 @@
 ## global
 seed:  31  # 11 21 31 41 51
 device: cuda
-mode: test
+mode: train
 best_path: Null # experiments/NYCBike1/MoEShared-weight/e8-8-2/best_model.pth   # Null 
-debug: False  
+debug: True  
 
 ## data 
 data_dir: data
@@ -25,6 +25,7 @@ expertWeightsAda: False # param 4 SharedMoE
 expertWeights: [0.8, 0.2] # param 4 SharedMoE
 
 ## model 
+layers: ['T','S','T','T','S','T'] # ['T','S','T','S','T','S'] ['S','T','S','T','S','T']
 d_input: 2                  # means inflow and outflow
 d_output: 2                 # means inflow and outflow
 d_model: 64

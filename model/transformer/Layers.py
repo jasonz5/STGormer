@@ -14,10 +14,10 @@ class EncoderLayer(nn.Module):
         self.moe_status = moe_status
         self.slf_attn = MultiHeadAttention(n_head, d_model, d_k, d_v, dropout=dropout)
         if moe_status == 'SharedMoE':
-            self.pos_ffn = SharedMoEFNN(d_model, num_experts, hidden_dim=d_model*4, dropout=moe_dropout, 
+            self.pos_ffn = SharedMoEFNN(d_model, num_experts, hidden_dim=d_inner, dropout=moe_dropout, 
                                         expertWeightsAda=expertWeightsAda, expertWeights=expertWeights)
         elif moe_status == 'MoE':
-            self.pos_ffn = MoEFNN(d_model, d_inner, dropout=dropout)
+            self.pos_ffn = MoEFNN(d_model, num_experts, d_inner, dropout=moe_dropout)
         elif moe_status == 'STMoE':
             self.pos_ffn = STMoEFNN(d_model, num_experts, dropout=moe_dropout, moe_add_ff=moe_add_ff)
         else: # None

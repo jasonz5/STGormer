@@ -13,7 +13,6 @@ from lib.utils import (
     dwa,  
 )
 from lib.metrics import test_metrics
-from model.moe.MoEScheduler import MoEScheduler
 
 class Trainer(object):
     def __init__(self, model, optimizer, scheduler, dataloader, graph, args):
@@ -28,7 +27,6 @@ class Trainer(object):
         self.scaler = dataloader['scaler']
         self.graph = graph
         self.args = args
-        self.moe_scheduler = MoEScheduler(top_k_init=args.num_experts)
 
         self.train_per_epoch = len(self.train_loader)
         if self.val_loader != None:
