@@ -58,6 +58,8 @@ class STAttention(nn.Module):
                 encoder_input = encoder_input.transpose(-2,-3)
             encoder_input, loss, *_ = self.st_encoder[i-1](encoder_input)
             aux_loss += loss
+        if layers_full[-1] == 'S':
+            encoder_input = encoder_input.transpose(-2,-3)
         return encoder_input, aux_loss
 
     def forward(self, history_data, graph=None): # history_data: n,l,v,c; graph: v,v 

@@ -53,7 +53,10 @@ def get_param_groups(model, base_learning_rate, num_experts, top_k, moe_status):
 
 
 def get_log_dir(args):
-    current_time = datetime.now().strftime('%Y%m%d-%H%M%S')
+    if args.save_path:
+        current_time = datetime.now().strftime(f'%Y%m%d-%H%M%S-{args.save_path}')
+    else:
+        current_time = datetime.now().strftime('%Y%m%d-%H%M%S')
     current_dir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
     log_dir = os.path.join(current_dir, 'experiments', args.dataset, current_time)
     return log_dir 

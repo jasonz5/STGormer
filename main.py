@@ -98,6 +98,7 @@ if __name__=='__main__':
     parser.add_argument('-g', '--gpu_id', type=str, default='7', help='GPU ID to use')
     parser.add_argument('--config_filename', default='configs/moest/NYCBike1.yaml', 
                     type=str, help='the configuration to use')
+    parser.add_argument('-s', '--save_path', type=str, default=None, help='save path of log file')
     args = parser.parse_args()
     
     print(f'Starting experiment with configurations in {args.config_filename}...')
@@ -106,7 +107,8 @@ if __name__=='__main__':
         open(args.config_filename), 
         Loader=yaml.FullLoader
     )
+    configs['save_path'] = args.save_path
     
     os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu_id
-    args = argparse.Namespace(**configs)
-    model_supervisor(args)
+    config_args = argparse.Namespace(**configs)
+    model_supervisor(config_args)
