@@ -12,14 +12,14 @@ from .transformer_layers import TrandformerEncoder
 class STAttention(nn.Module):
 
     def __init__(
-        self, in_channel, embed_dim, num_heads, mlp_ratio, encoder_depth, dropout, layers = None, 
+        self, in_channel, embed_dim, num_heads, mlp_ratio, layer_depth, dropout, layers = None, 
         args_moe = None, moe_position = None):
         super(STAttention, self).__init__()
         self.in_channel = in_channel
         self.embed_dim = embed_dim
         self.num_heads = num_heads
         self.mlp_ratio = mlp_ratio
-        self.encoder_depth = encoder_depth
+        self.layer_depth = layer_depth
         self.layers = layers
 
         # positional encoding
@@ -34,7 +34,7 @@ class STAttention(nn.Module):
         args_wo_moe = args_moe.copy()
         args_wo_moe["moe_status"] = None
         self.st_encoder = nn.ModuleList([
-            TrandformerEncoder(embed_dim, encoder_depth, mlp_ratio, num_heads, dropout,\
+            TrandformerEncoder(embed_dim, layer_depth, mlp_ratio, num_heads, dropout,\
                 args_moe if moe_posList[i]==1 else args_wo_moe)
             for i in range(len(layers))])
 
@@ -121,7 +121,7 @@ def main():
     os.environ['CUDA_VISIBLE_DEVICES'] = GPU
     device = "cuda" if torch.cuda.is_available() else "cpu"
     
-    model = STAttention(in_channel=2, embed_dim=64, num_heads=4, mlp_ratio=4, encoder_depth=1, dropout=0.1).to(device)
+    model = STAttention(in_channel=2, embed_dim=64, num_heads=4, mlp_ratio=4, layer_depth=1, dropout=0.1).to(device)
 
     # 定义日志文件的路径
     log_path = "../log/statt.log"  # 根据您的目录结构调整路径

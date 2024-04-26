@@ -15,7 +15,7 @@ graph_file: data/NYCBike1/adj_mx.npz # 128 x 128
 num_nodes: 128
 
 ## Frequency
-fft_status: True
+fft_status: False
 
 ## MoE
 moe_status: 'SharedMoE' # MoE / SharedMoE / STMoE / None
@@ -29,13 +29,13 @@ expertWeightsAda: False # param 4 SharedMoE
 expertWeights: [0.8, 0.2] # param 4 SharedMoE
 
 ## model 
-layers: ['T','S','T','T','S','T'] # ['T','S','T','T','S','T'] ['T','S','T','S','T','S'] ['S','T','S','T','S','T']
+layers: ['S','T','S','T','S','T'] # ['T','S','T','T','S','T'] ['T','S','T','S','T','S'] ['S','T','S','T','S','T']
 d_input: 2                  # means inflow and outflow
 d_output: 2                 # means inflow and outflow
 d_model: 64
 num_heads: 4
 mlp_ratio: 4
-encoder_depth: 1
+layer_depth: 1    # depth for one S/T Attention Module
 dropout: 0.1
 yita: 0.6                   # balance for inflow loss and outflow loss, $yita * inflow + (1 - yita) * outflow$
 ## Sparse ScaledDotProduct Attention

@@ -19,7 +19,7 @@ class MoESTar(nn.Module):
                     "moe_add_ff": args.moe_add_ff, 
                     "expertWeightsAda": args.expertWeightsAda, 'expertWeights': args.expertWeights}
         self.encoder = STAttention(
-            args.d_input, args.d_model, args.num_heads, args.mlp_ratio, args.encoder_depth, args.dropout, args.layers,
+            args.d_input, args.d_model, args.num_heads, args.mlp_ratio, args.layer_depth, args.dropout, args.layers,
             args_moe = args_moe, moe_position = args.moe_position)
         
         # traffic flow prediction branch
