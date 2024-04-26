@@ -3,10 +3,10 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from model.transformer.Modules import ScaledDotProductAttention
-from model.stmoe.st_moe_pytorch import MoE as STMoE, SparseMoEBlock
-from model.sharedmoe.mixture_of_experts import RoutedMoE, Experts
-from model.moe.mixture_of_experts import MoE, Experts
+from .Modules import ScaledDotProductAttention
+from ..moe.stmoe.st_moe_pytorch import MoE as STMoE, SparseMoEBlock
+from ..moe.sharedmoe.mixture_of_experts import RoutedMoE, Experts
+from ..moe.vanillamoe.mixture_of_experts import MoE, Experts
 
 ''' Adjust according to STGSP '''
 
@@ -51,9 +51,6 @@ class MultiHeadAttention(nn.Module):
             mask = mask.unsqueeze(1)   # For head axis broadcasting.
 
         output, attn = self.attention(q, k, v, mask=mask)
-        ### sparse ###
-        # output, attn = self.attention.sparse_dot_product(q, k, v, k=32)
-        ### sparse ###
         
         # Transpose to move the head dimension back: b x lq x n x dv
         # Combine the last two dimensions to concatenate all the heads together: b x lq x (n*dv)

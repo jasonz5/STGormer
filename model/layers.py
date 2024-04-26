@@ -12,7 +12,8 @@ from .transformer_layers import TrandformerEncoder
 class STAttention(nn.Module):
 
     def __init__(
-        self, in_channel, embed_dim, num_heads, mlp_ratio, layer_depth, dropout, layers = None, 
+        self, in_channel, embed_dim, num_heads, mlp_ratio, layer_depth, 
+        dropout, layers = None, spareS = False, spareT = False, 
         args_moe = None, moe_position = None):
         super(STAttention, self).__init__()
         self.in_channel = in_channel
@@ -21,6 +22,8 @@ class STAttention(nn.Module):
         self.mlp_ratio = mlp_ratio
         self.layer_depth = layer_depth
         self.layers = layers
+        self.spareS = spareS
+        self.spareT = spareT
 
         # positional encoding
         self.pos_mat=None
@@ -38,7 +41,7 @@ class STAttention(nn.Module):
                 args_moe if moe_posList[i]==1 else args_wo_moe)
             for i in range(len(layers))])
 
-    def encoding(self, history_data):
+    def encoding(self, history_data, graph):
         """
         Args: history_data (torch.Tensor): history flow data [B, P, N, d] # n,l,v,c
         Returns: torch.Tensor: hidden states
@@ -51,19 +54,32 @@ class STAttention(nn.Module):
         # positional embedding
         encoder_input, self.pos_mat = self.positional_encoding(patches)# B, N, P, d
         
+        ## 计算时间和空间的掩码矩阵 ##
+        if self.spareS:
+            maskS = graph.to('cuda')
+        else:
+            maskS = None
+        if self.spareT:
+            maskT = torch.tril(torch.ones((num_time, num_time))).to('cuda')
+        else:
+            maskT = None
+        
         aux_loss = torch.tensor(0, dtype=torch.float32).to('cuda')
         layers_full = ['T'] + self.layers
         for i in range(1, len(layers_full)):
             if layers_full[i] != layers_full[i-1]:
                 encoder_input = encoder_input.transpose(-2,-3)
-            encoder_input, loss, *_ = self.st_encoder[i-1](encoder_input)
+            if layers_full[i] == 'S':
+                encoder_input, loss, *_ = self.st_encoder[i-1](encoder_input, mask=maskS)
+            else: # == 'T'
+                encoder_input, loss, *_ = self.st_encoder[i-1](encoder_input, mask=maskT)
             aux_loss += loss
         if layers_full[-1] == 'S':
             encoder_input = encoder_input.transpose(-2,-3)
         return encoder_input, aux_loss
 
     def forward(self, history_data, graph=None): # history_data: n,l,v,c; graph: v,v 
-        repr, aux_loss = self.encoding(history_data) # B, N, P, d
+        repr, aux_loss = self.encoding(history_data, graph) # B, N, P, d
         repr = repr.transpose(-2,-3) # n,l,v,c
         return repr[:,-1:,:,:], aux_loss
 

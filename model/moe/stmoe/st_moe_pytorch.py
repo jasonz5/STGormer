@@ -15,7 +15,7 @@ from colt5_attention import topk as maybe_differentiable_topk
 
 import torch.distributed as dist
 
-from model.stmoe.distributed import (
+from .distributed import (
     AllGather,
     split_by_rank,
     gather_sizes,

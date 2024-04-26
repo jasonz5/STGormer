@@ -38,9 +38,9 @@ mlp_ratio: 4
 layer_depth: 1    # depth for one S/T Attention Module
 dropout: 0.1
 yita: 0.6                   # balance for inflow loss and outflow loss, $yita * inflow + (1 - yita) * outflow$
-## Sparse ScaledDotProduct Attention
-sparse: False
-sparseK: 32
+## Sparse Attention
+sparseS: False
+sparseT: False
 
 ## train
 epochs: 250

@@ -17,6 +17,9 @@ class TrandformerEncoder(nn.Module):
         B, N, L, D = src.shape
         src=src.contiguous()
         src = src.view(B*N, L, D)
+        ## mask expansion ##
+        if mask is not None:
+            mask = mask.repeat(B*N, 1, 1)
         
         enc_slf_attn_list = []
         enc_output = src
