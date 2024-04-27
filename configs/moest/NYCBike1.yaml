@@ -18,8 +18,8 @@ num_nodes: 128
 fft_status: False
 
 ## MoE
-moe_status: 'SharedMoE' # MoE / SharedMoE / STMoE / None
-num_experts: 8
+moe_status: "SharedMoE" # SoftMoE / MoE / SharedMoE / STMoE / None
+num_experts: 6
 moe_dropout: 0.1
 top_k: 1
 moe_mlr: True  # important #
@@ -29,7 +29,7 @@ expertWeightsAda: False # param 4 SharedMoE
 expertWeights: [0.8, 0.2] # param 4 SharedMoE
 
 ## model 
-layers: ['S','T','S','T','S','T'] # ['T','S','T','T','S','T'] ['T','S','T','S','T','S'] ['S','T','S','T','S','T']
+layers: ['S','T','S','T'] # ['T','S','T','T','S','T'] ['T','S','T','S','T','S'] ['S','T','S','T','S','T']
 d_input: 2                  # means inflow and outflow
 d_output: 2                 # means inflow and outflow
 d_model: 64
