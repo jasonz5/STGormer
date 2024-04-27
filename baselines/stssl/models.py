@@ -1,11 +1,11 @@
 import torch.nn as nn
 
 from lib.utils import masked_mae_loss
-from model.aug import (
+from .aug import (
     aug_topology, 
     aug_traffic, 
 )
-from model.layers import (
+from .layers import (
     STEncoder, 
     SpatialHeteroModel, 
     TemporalHeteroModel, 

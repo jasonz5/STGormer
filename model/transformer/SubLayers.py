@@ -84,7 +84,7 @@ class SoftMoEFNN(nn.Module):
     ''' Continuous MoE FNN module '''
     def __init__(self, input_dim, num_experts, hidden_dim=None, dropout=0.1):
         super(SoftMoEFNN, self).__init__()
-        self.softExpert = SoftMoE(input_dim, num_experts) #SoftMoE
+        self.softExpert = SoftMoE(input_dim, num_experts) #SoftMoE ContinuousMoE
         self.layer_norm = nn.LayerNorm(input_dim)
         self.dropout = nn.Dropout(dropout)
 

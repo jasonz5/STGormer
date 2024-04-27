@@ -30,7 +30,7 @@ class EncoderLayer(nn.Module):
             enc_input, enc_input, enc_input, mask=slf_attn_mask)
         aux_loss = 0
         if self.moe_status == 'SoftMoE':
-            enc_output, aux_loss = self.pos_ffn(enc_output)
+            enc_output, *_ = self.pos_ffn(enc_output)
         elif self.moe_status == 'SharedMoE':
             enc_output, aux_loss = self.pos_ffn(enc_output)
         elif self.moe_status == 'MoE':

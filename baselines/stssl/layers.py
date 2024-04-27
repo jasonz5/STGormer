@@ -4,7 +4,7 @@ import torch.nn as nn
 import torch.nn.functional as F 
 import torch.nn.init as init
 
-from model.aug import sim_global
+from .aug import sim_global
 
 ########################################
 ## Spatial Heterogeneity Modeling
