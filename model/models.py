@@ -25,7 +25,7 @@ class MoESTar(nn.Module):
         
         # traffic flow prediction branch
         self.mlp = MLP(args.d_model, args.d_output)
-        self.mae = masked_mae_loss(mask_value=5.0)
+        self.mae = masked_mae_loss(mask_value=args.mask_value_train)
         self.args = args
         # Filter 
         self.fft_status = args.fft_status

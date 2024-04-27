@@ -29,7 +29,7 @@ def mape_np(pred, true, mask_value=None):
         pred = pred[mask]
     return np.mean(np.absolute(np.divide((true - pred), true)))
 
-def test_metrics(pred, true, mask1=5, mask2=5):
+def test_metrics(pred, true, mask1=5.0, mask2=5.0):
     # mask1 filter the very small value, mask2 filter the value lower than a defined threshold
     assert type(pred) == type(true)
     if type(pred) == np.ndarray:

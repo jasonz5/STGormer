@@ -2,7 +2,7 @@
 seed:  31  # 11 21 31 41 51
 device: cuda
 mode: train
-best_path: Null # experiments/NYCBike1/MoEShared-weight/e8-8-2/best_model.pth   # Null 
+best_path: Null  #experiments/NYCBike1/MoESoft/maskValue/train5test0/models/softmoe.pth   # Null 
 debug: False  
 
 ## data 
@@ -18,7 +18,7 @@ num_nodes: 128
 fft_status: False
 
 ## MoE
-moe_status: "SharedMoE" # SoftMoE / MoE / SharedMoE / STMoE / None
+moe_status: SoftMoE # SoftMoE / MoE / SharedMoE / STMoE / None
 num_experts: 6
 moe_dropout: 0.1
 top_k: 1
@@ -56,6 +56,10 @@ gamma: 0.5 # StepLR MultiStepLR ExponentialLR
 # 2. MultiStepLR 2.0e-3 [1, 50, 80, 100, 120] 0.5 相比1，MAE差，MAPE好些
 # 3. MultiStepLR 1.0e-4 [120, 140, 160, 180, 200] 0.9
 ## learning rate ##
+## mask value setting ##
+mask_value_train: 5.0
+mask_value_test: 5.0
+## mask value setting ##
 early_stop: True
 early_stop_patience: 25
 grad_norm: True
