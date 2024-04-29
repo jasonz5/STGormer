@@ -25,9 +25,9 @@ class EncoderLayer(nn.Module):
         else: # None
             self.pos_ffn = PositionwiseFeedForward(d_model, d_inner, dropout=dropout)
 
-    def forward(self, enc_input, slf_attn_mask=None):
+    def forward(self, enc_input, slf_attn_mask=None, attn_bias = None):
         enc_output, enc_slf_attn = self.slf_attn(
-            enc_input, enc_input, enc_input, mask=slf_attn_mask)
+            enc_input, enc_input, enc_input, mask=slf_attn_mask, attn_bias = attn_bias)
         aux_loss = 0
         if self.moe_status == 'SoftMoE':
             enc_output, *_ = self.pos_ffn(enc_output)

@@ -13,7 +13,7 @@ class TrandformerEncoder(nn.Module):
                          d_k=d_model, d_v=d_model, dropout=dropout, **args_moe)
             for _ in range(nlayers)])
 
-    def forward(self, src, mask=None, return_attns=False):
+    def forward(self, src, mask=None, return_attns=False, attn_bias = None):
         B, N, L, D = src.shape
         src=src.contiguous()
         src = src.view(B*N, L, D)
@@ -25,7 +25,7 @@ class TrandformerEncoder(nn.Module):
         enc_output = src
         aux_loss = 0
         for enc_layer in self.layer_stack:
-            enc_output, enc_slf_attn, loss = enc_layer(enc_output, slf_attn_mask=mask)
+            enc_output, enc_slf_attn, loss = enc_layer(enc_output, slf_attn_mask=mask, attn_bias = attn_bias)
             enc_slf_attn_list += [enc_slf_attn] if return_attns else []
             aux_loss += loss
         enc_output = enc_output.view(B, N, L, D)

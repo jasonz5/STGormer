@@ -9,7 +9,6 @@ from ..moe.sharedmoe.mixture_of_experts import RoutedMoE
 from ..moe.vanillamoe.mixture_of_experts import MoE
 from ..moe.softmoe.softmoe import ContinuousMoE, SoftMoE
 
-''' Adjust according to STGSP '''
 
 class MultiHeadAttention(nn.Module):
     ''' Multi-Head Attention module '''
@@ -32,7 +31,7 @@ class MultiHeadAttention(nn.Module):
         self.layer_norm = nn.LayerNorm(d_model)
         
 
-    def forward(self, q, k, v, mask=None):
+    def forward(self, q, k, v, mask=None, attn_bias = None):
 
         d_k, d_v, n_head = self.d_k, self.d_v, self.n_head
         sz_b, len_q, len_k, len_v = q.size(0), q.size(1), k.size(1), v.size(1)
@@ -51,7 +50,7 @@ class MultiHeadAttention(nn.Module):
         if mask is not None:
             mask = mask.unsqueeze(1)   # For head axis broadcasting.
 
-        output, attn = self.attention(q, k, v, mask=mask)
+        output, attn = self.attention(q, k, v, mask=mask, attn_bias=attn_bias)
         
         # Transpose to move the head dimension back: b x lq x n x dv
         # Combine the last two dimensions to concatenate all the heads together: b x lq x (n*dv)

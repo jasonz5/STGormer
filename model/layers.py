@@ -7,13 +7,13 @@ import torch.nn.init as init
 import sys
 from .positional_encoding import PositionalEncoding
 from .transformer_layers import TrandformerEncoder
-
+from .utils.trans_utils import SpatialNodeFeature, SpatialAttnBias, generate_moe_posList
 
 class STAttention(nn.Module):
 
     def __init__(
         self, in_channel, embed_dim, num_heads, mlp_ratio, layer_depth, 
-        dropout, layers = None, spareS = False, spareT = False, 
+        dropout, layers = None, args_attn = None,
         args_moe = None, moe_position = None):
         super(STAttention, self).__init__()
         self.in_channel = in_channel
@@ -22,12 +22,19 @@ class STAttention(nn.Module):
         self.mlp_ratio = mlp_ratio
         self.layer_depth = layer_depth
         self.layers = layers
-        self.spareS = spareS
-        self.spareT = spareT
-
-        # positional encoding
+        self.attn_mask_S = args_attn["attn_mask_S"]
+        self.attn_mask_T = args_attn["attn_mask_T"]
+        self.attn_bias_S = args_attn["attn_bias_S"]
+        self.attn_bias_T = args_attn["attn_bias_T"]
+        self.num_spatial = args_attn["num_spatial"]
+        self.num_degree = args_attn["num_degree"]
+        
+        # temporal encoding
         self.pos_mat=None
         self.positional_encoding = PositionalEncoding()
+        # spatial encoding
+        self.spatial_node_feature = SpatialNodeFeature(self.num_degree, self.embed_dim)
+        self.spatial_attn_bias = SpatialAttnBias(self.num_spatial, self.embed_dim)
         
         self.project = FCLayer(in_channel, embed_dim)
         
@@ -55,24 +62,45 @@ class STAttention(nn.Module):
         encoder_input, self.pos_mat = self.positional_encoding(patches)# B, N, P, d
         
         ## 计算时间和空间的掩码矩阵 ##
-        if self.spareS:
-            maskS = graph.to('cuda')
+        if self.attn_mask_S:
+            # maskS = graph.to('cuda')
+            maskS = torch.ones((num_nodes, num_nodes)).to('cuda')
+            torch.diagonal(maskS).fill_(0)
         else:
             maskS = None
-        if self.spareT:
+        if self.attn_mask_T:
             maskT = torch.tril(torch.ones((num_time, num_time))).to('cuda')
         else:
             maskT = None
         
+        ## 计算spatial的attn bias
+        if self.attn_bias_S:
+            attn_bias_spatial = self.spatial_attn_bias(graph)
+            import ipdb; ipdb.set_trace()
+            # add spatial node degree information
+            degree = graph.sum(dim=-1)
+            degree_feature = self.spatial_node_feature(degree) # [n, d]
+            degree_feature = degree_feature.view(batch_size, num_nodes)
+            degree_feature = degree_feature.unsqueeze(0).unsqueeze(2)
+            encoder_input = encoder_input + degree_feature
+        else: 
+            attn_bias_spatial = None
+        if self.attn_bias_T:
+            attn_bias_temporal = None
+        else: 
+            attn_bias_temporal = None
+            
         aux_loss = torch.tensor(0, dtype=torch.float32).to('cuda')
         layers_full = ['T'] + self.layers
         for i in range(1, len(layers_full)):
             if layers_full[i] != layers_full[i-1]:
                 encoder_input = encoder_input.transpose(-2,-3)
             if layers_full[i] == 'S':
-                encoder_input, loss, *_ = self.st_encoder[i-1](encoder_input, mask=maskS)
+                encoder_input, loss, *_ = self.st_encoder[i-1](encoder_input, 
+                        mask=maskS, attn_bias = attn_bias_spatial)
             else: # == 'T'
-                encoder_input, loss, *_ = self.st_encoder[i-1](encoder_input, mask=maskT)
+                encoder_input, loss, *_ = self.st_encoder[i-1](encoder_input, 
+                        mask=maskT, attn_bias = attn_bias_temporal)
             aux_loss += loss
         if layers_full[-1] == 'S':
             encoder_input = encoder_input.transpose(-2,-3)
@@ -83,22 +111,6 @@ class STAttention(nn.Module):
         repr = repr.transpose(-2,-3) # n,l,v,c
         return repr[:,-1:,:,:], aux_loss
 
-def generate_moe_posList(layers, moe_position):
-    length = len(layers)
-    if moe_position == 'Full':
-        return [1] * length
-    elif moe_position == 'Half':
-        half_length = length // 2
-        return [0] * half_length + [1] * (length - half_length)
-    elif moe_position == 'woS':
-        return [0 if layer == 'S' else 1 for layer in layers]
-    elif moe_position == 'woT':
-        return [0 if layer == 'T' else 1 for layer in layers]
-    elif moe_position == 'woST':
-        return [0] * length
-    else:
-        print("moe_position is None or invalid, should have a valid value")
-        return None
 
 ########################################
 ## An MLP predictor
