@@ -76,15 +76,15 @@ class STAttention(nn.Module):
         else:
             maskT = None
         
+        # add spatial node degree information
+        if self.cen_embed_S:
+            degree = graph.sum(dim=-1).long()
+            degree_feature = self.spatial_node_feature(degree) # [n, d]
+            degree_feature = degree_feature.view(1, num_nodes, 1, num_dim)
+            encoder_input = encoder_input + degree_feature # [b, n, t, d] [1, n, 1, d]
         ## 计算spatial的attn bias
         if self.attn_bias_S:
             attn_bias_spatial = self.spatial_attn_bias(graph) # [n, n, 1]
-            # add spatial node degree information
-            if self.cen_embed_S:
-                degree = graph.sum(dim=-1).long()
-                degree_feature = self.spatial_node_feature(degree) # [n, d]
-                degree_feature = degree_feature.view(1, num_nodes, 1, num_dim)
-                encoder_input = encoder_input + degree_feature # [b, n, t, d] [1, n, 1, d]
         else: 
             attn_bias_spatial = None
         if self.attn_bias_T:

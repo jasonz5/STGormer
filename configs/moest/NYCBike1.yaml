@@ -41,10 +41,10 @@ yita: 0.6                   # balance for inflow loss and outflow loss, $yita * 
 ## spatio-temporal information injection
 attn_mask_S: False
 attn_mask_T: False
-attn_bias_S: True
-attn_bias_T: True
+attn_bias_S: False
+attn_bias_T: False # 没有设置attn_bias_T 
 pos_embed_T: True
-cen_embed_S: True # Spatial Centrality Encoding
+cen_embed_S: False # Spatial Centrality Encoding
 
 ## train
 epochs: 250
@@ -62,7 +62,7 @@ gamma: 0.5 # StepLR MultiStepLR ExponentialLR
 ## learning rate ##
 ## mask value setting ##
 mask_value_train: 5.0
-mask_value_test:  Null # 5.0 $important$
+mask_value_test: Null # 5.0 $important$
 ## mask value setting ##
 early_stop: True
 early_stop_patience: 25
