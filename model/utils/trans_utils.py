@@ -5,6 +5,16 @@ import torch.nn.functional as F
 import numpy as np
 import scipy.sparse.csgraph as csgraph
 
+class TemporalNodeFeature(nn.Module):
+    def __init__(self, num_timestamps, d_model):
+        super(TemporalNodeFeature, self).__init__()
+        self.temporal_encoder = nn.Embedding(num_timestamps, d_model)
+
+    def forward(self, timestamps):
+        # timestamps: [t]  
+        temporal_feature = self.temporal_encoder(timestamps) # [t, d]
+        return temporal_feature
+
 class SpatialNodeFeature(nn.Module):
     def __init__(self, num_degree, d_model):
         super(SpatialNodeFeature, self).__init__()

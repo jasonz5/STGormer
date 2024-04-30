@@ -23,7 +23,8 @@ class MoESTar(nn.Module):
         args_attn = {"attn_mask_S": args.attn_mask_S, "attn_mask_T": args.attn_mask_T,
                     "attn_bias_S": args.attn_bias_S, "attn_bias_T": args.attn_bias_T,
                     "pos_embed_T": args.pos_embed_T, "cen_embed_S": args.cen_embed_S,
-                    "num_spatial": args.num_spatial, "num_degree": args.num_degree}
+                    "num_spatial": args.num_spatial, "num_degree": args.num_degree,
+                    "num_timestamps": args.num_timestamps}
         self.encoder = STAttention(
             args.d_input, args.d_model, args.num_heads, args.mlp_ratio,
             args.layer_depth, args.dropout, args.layers, args_attn = args_attn, 

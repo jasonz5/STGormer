@@ -38,6 +38,7 @@ def model_supervisor(args):
     args.num_nodes = len(graph)
     args.num_spatial = get_shortpath_num(graph)
     args.num_degree = get_num_degree(graph)
+    args.num_timestamps = int(24*7)
     
     ## init model and set optimizer
     model = MoESTar(args).to(args.device)

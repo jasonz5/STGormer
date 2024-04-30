@@ -9,9 +9,10 @@ import argparse
 import traceback
 import time
 import torch
+import os
 
-from model.models import STSSL
-from model.trainer import Trainer
+from baselines.stssl.models import STSSL
+from baselines.stssl.trainer import Trainer
 from lib.dataloader import get_dataloader
 from lib.utils import (
     init_seed,
@@ -75,16 +76,20 @@ def model_supervisor(args):
 
 if __name__=='__main__':
     parser = argparse.ArgumentParser()
+    parser.add_argument('-g', '--gpu_id', type=str, default='7', help='GPU ID to use')
     parser.add_argument('--config_filename', default='configs/stssl/NYCBike1.yaml', 
                     type=str, help='the configuration to use')
+    parser.add_argument('-s', '--save_path', type=str, default=None, help='save path of log file')
     args = parser.parse_args()
     
     print(f'Starting experiment with configurations in {args.config_filename}...')
-    time.sleep(1)
+    # time.sleep(1)
     configs = yaml.load(
         open(args.config_filename), 
         Loader=yaml.FullLoader
     )
-
-    args = argparse.Namespace(**configs)
-    model_supervisor(args)
+    configs['save_path'] = args.save_path
+    
+    os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu_id
+    config_args = argparse.Namespace(**configs)
+    model_supervisor(config_args)

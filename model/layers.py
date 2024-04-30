@@ -7,7 +7,7 @@ import torch.nn.init as init
 import sys
 from .positional_encoding import PositionalEncoding
 from .transformer_layers import TrandformerEncoder
-from .utils.trans_utils import SpatialNodeFeature, SpatialAttnBias, generate_moe_posList
+from .utils.trans_utils import TemporalNodeFeature, SpatialNodeFeature, SpatialAttnBias, generate_moe_posList
 
 class STAttention(nn.Module):
 
@@ -30,11 +30,13 @@ class STAttention(nn.Module):
         self.cen_embed_S = args_attn["cen_embed_S"]
         self.num_spatial = args_attn["num_spatial"]
         self.num_degree = args_attn["num_degree"]
+        self.num_timestamps = args_attn["num_timestamps"]
         
         # temporal encoding
         self.pos_mat=None
         self.positional_encoding = PositionalEncoding()
         # spatial encoding
+        self.temporal_node_feature = TemporalNodeFeature(self.num_timestamps, self.embed_dim)
         self.spatial_node_feature = SpatialNodeFeature(self.num_degree, self.embed_dim)
         self.spatial_attn_bias = SpatialAttnBias(self.num_spatial, bias_dim=1)
         
@@ -88,7 +90,8 @@ class STAttention(nn.Module):
         else: 
             attn_bias_spatial = None
         if self.attn_bias_T:
-            attn_bias_temporal = None
+            time_stamps = None #[x]todo: 将数据的时间戳信息编码
+            attn_bias_temporal = self.temporal_node_feature(time_stamps)
         else: 
             attn_bias_temporal = None
             
