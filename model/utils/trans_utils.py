@@ -15,19 +15,22 @@ class SpatialNodeFeature(nn.Module):
         degree_feature = self.degree_encoder(degree) # [n, d]
         return degree_feature
 
-
 class SpatialAttnBias(nn.Module):
-    def __init__(self, num_spatial, d_model):
+    def __init__(self, num_spatial, bias_dim=1):
         super(SpatialAttnBias, self).__init__()
-        self.d_model = d_model
+        self.bias_dim = bias_dim
         self.num_spatial = num_spatial
-        self.spatial_pos_encoder = nn.Embedding(num_spatial, d_model)
+        self.spatial_pos_encoder = nn.Embedding(num_spatial, bias_dim)
         
     def forward(self, graph):
         # 使用 Floyd-Warshall 算法计算所有节点对的最短路径
         graph = modify_graph(graph)
+        if graph.is_cuda:
+            graph = graph.cpu().numpy()
+        else:
+            graph = graph.numpy()
         shortest_path = csgraph.floyd_warshall(graph, return_predecessors=False)
-        shortest_path = torch.tensor(shortest_path, dtype=torch.long)
+        shortest_path = torch.tensor(shortest_path, dtype=torch.long, device='cuda')
         num_spatial = int(torch.max(shortest_path)) + 1
         assert self.num_spatial == num_spatial, "num_spatial结果不相等"
         
@@ -41,6 +44,10 @@ def get_num_degree(graph):
 
 def get_shortpath_num(graph):
     graph = modify_graph(graph)
+    if graph.is_cuda:
+        graph = graph.cpu().numpy()
+    else:
+        graph = graph.numpy()
     shortest_path = csgraph.floyd_warshall(graph, return_predecessors=False)
     shortest_path = torch.tensor(shortest_path, dtype=torch.long)
     num_spatial = int(torch.max(shortest_path)) + 1
@@ -50,7 +57,7 @@ def get_shortpath_num(graph):
 # Replace 0s with float('inf'), except on the diagonal
 def modify_graph(graph):
     modified_graph = graph.clone().float()
-    inf_mask = (graph == 0) & ~torch.eye(graph.size(0), dtype=torch.bool)
+    inf_mask = (graph == 0) & ~torch.eye(graph.size(0), dtype=torch.bool, device=graph.device)
     modified_graph[inf_mask] = float('inf')
     # torch.diagonal(modified_graph)[:] = 0
     return modified_graph

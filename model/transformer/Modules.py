@@ -15,13 +15,16 @@ class ScaledDotProductAttention(nn.Module):
         self.dropout = nn.Dropout(attn_dropout)
 
     def forward(self, q, k, v, mask=None, attn_bias = None):
-
-        attn = torch.matmul(q, k.transpose(-2, -1)) / self.temperature
+        # q,k,v [b, num_heads, seq_len, d] 
+        # mask: [b, 1, seq_len, seq_len]
+        # attn_bias: [seq_len, seq_len, 1]
+        attn = torch.matmul(q, k.transpose(-2, -1)) / self.temperature # [b, num_heads, seq_len, seq_len]
 
         if attn_bias is not None:
-            attn = attn + attn_bias.unsqueeze(0)
+            seq_len = attn_bias.shape[0]
+            attn = attn + attn_bias.view(1, 1, seq_len, seq_len)
         if mask is not None:
-            attn = attn.masked_fill(mask.unsqueeze(0) == 0, float('-inf'))
+            attn = attn.masked_fill(mask == 0, float('-inf'))
 
         attn = F.softmax(attn, dim=-1)
         attn = self.dropout(attn)

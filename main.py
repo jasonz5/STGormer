@@ -20,6 +20,7 @@ from lib.utils import (
     get_param_groups,
     load_graph, 
 )
+from model.utils.trans_utils import get_shortpath_num, get_num_degree
 
 def model_supervisor(args):
     init_seed(args.seed)
@@ -35,6 +36,8 @@ def model_supervisor(args):
     )
     graph = load_graph(args.graph_file, device=args.device)
     args.num_nodes = len(graph)
+    args.num_spatial = get_shortpath_num(graph)
+    args.num_degree = get_num_degree(graph)
     
     ## init model and set optimizer
     model = MoESTar(args).to(args.device)

@@ -26,6 +26,8 @@ class STAttention(nn.Module):
         self.attn_mask_T = args_attn["attn_mask_T"]
         self.attn_bias_S = args_attn["attn_bias_S"]
         self.attn_bias_T = args_attn["attn_bias_T"]
+        self.pos_embed_T = args_attn["pos_embed_T"]
+        self.cen_embed_S = args_attn["cen_embed_S"]
         self.num_spatial = args_attn["num_spatial"]
         self.num_degree = args_attn["num_degree"]
         
@@ -34,7 +36,7 @@ class STAttention(nn.Module):
         self.positional_encoding = PositionalEncoding()
         # spatial encoding
         self.spatial_node_feature = SpatialNodeFeature(self.num_degree, self.embed_dim)
-        self.spatial_attn_bias = SpatialAttnBias(self.num_spatial, self.embed_dim)
+        self.spatial_attn_bias = SpatialAttnBias(self.num_spatial, bias_dim=1)
         
         self.project = FCLayer(in_channel, embed_dim)
         
@@ -55,11 +57,12 @@ class STAttention(nn.Module):
         """
         # project the #dim of input flow to #embed_dim
         patches = self.project(history_data.permute(0, 3, 1, 2)) # nlvc->nclv
-        patches = patches.permute(0, 3, 2, 1)         # B, N, P, d
-        batch_size, num_nodes, num_time, num_dim = patches.shape
+        encoder_input = patches.permute(0, 3, 2, 1)         # B, N, P, d
+        batch_size, num_nodes, num_time, num_dim = encoder_input.shape
         
-        # positional embedding
-        encoder_input, self.pos_mat = self.positional_encoding(patches)# B, N, P, d
+        # temporal positional embedding
+        if  self.pos_embed_T:
+            encoder_input, self.pos_mat = self.positional_encoding(encoder_input)# B, N, P, d
         
         ## 计算时间和空间的掩码矩阵 ##
         if self.attn_mask_S:
@@ -75,14 +78,13 @@ class STAttention(nn.Module):
         
         ## 计算spatial的attn bias
         if self.attn_bias_S:
-            attn_bias_spatial = self.spatial_attn_bias(graph)
-            import ipdb; ipdb.set_trace()
+            attn_bias_spatial = self.spatial_attn_bias(graph) # [n, n, 1]
             # add spatial node degree information
-            degree = graph.sum(dim=-1)
-            degree_feature = self.spatial_node_feature(degree) # [n, d]
-            degree_feature = degree_feature.view(batch_size, num_nodes)
-            degree_feature = degree_feature.unsqueeze(0).unsqueeze(2)
-            encoder_input = encoder_input + degree_feature
+            if self.cen_embed_S:
+                degree = graph.sum(dim=-1).long()
+                degree_feature = self.spatial_node_feature(degree) # [n, d]
+                degree_feature = degree_feature.view(1, num_nodes, 1, num_dim)
+                encoder_input = encoder_input + degree_feature # [b, n, t, d] [1, n, 1, d]
         else: 
             attn_bias_spatial = None
         if self.attn_bias_T:

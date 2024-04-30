@@ -15,8 +15,6 @@ class MoESTar(nn.Module):
         # spatial temporal encoder
         # self.encoder = STAttention(Kt=3, Ks=3, blocks=[[2, int(args.d_model//2), args.d_model], [args.d_model, int(args.d_model//2), args.d_model]], 
         #                 input_length=args.input_length, num_nodes=args.num_nodes, droprate=args.dropout)
-        num_spatial = get_shortpath_num(args.graph)
-        num_degree = get_num_degree(args.graph)
         
         args_moe = {"moe_status": args.moe_status, "num_experts": args.num_experts,
                     "moe_dropout": args.moe_dropout, "top_k": args.top_k, 
@@ -24,7 +22,8 @@ class MoESTar(nn.Module):
                     "expertWeightsAda": args.expertWeightsAda, 'expertWeights': args.expertWeights}
         args_attn = {"attn_mask_S": args.attn_mask_S, "attn_mask_T": args.attn_mask_T,
                     "attn_bias_S": args.attn_bias_S, "attn_bias_T": args.attn_bias_T,
-                    "num_spatial": num_spatial, "num_degree": num_degree}
+                    "pos_embed_T": args.pos_embed_T, "cen_embed_S": args.cen_embed_S,
+                    "num_spatial": args.num_spatial, "num_degree": args.num_degree}
         self.encoder = STAttention(
             args.d_input, args.d_model, args.num_heads, args.mlp_ratio,
             args.layer_depth, args.dropout, args.layers, args_attn = args_attn, 

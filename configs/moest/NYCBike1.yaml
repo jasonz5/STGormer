@@ -3,7 +3,7 @@ seed:  31  # 11 21 31 41 51
 device: cuda
 mode: train
 best_path: Null  #experiments/NYCBike1/MoESoft/maskValue/train5test0/models/softmoe.pth   # Null 
-debug: True  
+debug: False  
 
 ## data 
 data_dir: data
@@ -38,11 +38,13 @@ mlp_ratio: 4
 layer_depth: 1    # depth for one S/T Attention Module
 dropout: 0.1
 yita: 0.6                   # balance for inflow loss and outflow loss, $yita * inflow + (1 - yita) * outflow$
-## Attention
+## spatio-temporal information injection
 attn_mask_S: False
 attn_mask_T: False
 attn_bias_S: True
 attn_bias_T: True
+pos_embed_T: True
+cen_embed_S: True # Spatial Centrality Encoding
 
 ## train
 epochs: 250
@@ -60,7 +62,7 @@ gamma: 0.5 # StepLR MultiStepLR ExponentialLR
 ## learning rate ##
 ## mask value setting ##
 mask_value_train: 5.0
-mask_value_test: 5.0
+mask_value_test:  Null # 5.0 $important$
 ## mask value setting ##
 early_stop: True
 early_stop_patience: 25
