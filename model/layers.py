@@ -36,7 +36,8 @@ class STAttention(nn.Module):
         self.pos_mat=None
         self.positional_encoding = PositionalEncoding()
         # spatial encoding
-        self.temporal_node_feature = TemporalNodeFeature(self.num_timestamps, self.embed_dim)
+        self.temporal_node_feature = TemporalNodeFeature(hidden_size=self.embed_dim, vocab_size = self.num_timestamps)
+        self.cat_timestamps = nn.Linear(embed_dim * 2, embed_dim) # Cat speed information and TIM information
         self.spatial_node_feature = SpatialNodeFeature(self.num_degree, self.embed_dim)
         self.spatial_attn_bias = SpatialAttnBias(self.num_spatial, bias_dim=1)
         
@@ -52,7 +53,7 @@ class STAttention(nn.Module):
                 args_moe if moe_posList[i]==1 else args_wo_moe)
             for i in range(len(layers))])
 
-    def encoding(self, history_data, graph):
+    def encoding(self, history_data, graph, time_stamps = None):
         """
         Args: history_data (torch.Tensor): history flow data [B, P, N, d] # n,l,v,c
         Returns: torch.Tensor: hidden states
@@ -64,7 +65,10 @@ class STAttention(nn.Module):
         
         # temporal positional embedding
         if  self.pos_embed_T:
-            encoder_input, self.pos_mat = self.positional_encoding(encoder_input)# B, N, P, d
+            #TODO: fix
+            time_feature =  self.temporal_node_feature(time_stamps)
+            encoder_input = self.cat_timestamps(torch.cat([encoder_input, time_feature], dim = -1))
+            # encoder_input, self.pos_mat = self.positional_encoding(encoder_input)# B, N, P, d
         
         ## 计算时间和空间的掩码矩阵 ##
         if self.attn_mask_S:
@@ -90,8 +94,9 @@ class STAttention(nn.Module):
         else: 
             attn_bias_spatial = None
         if self.attn_bias_T:
-            time_stamps = None #[x]todo: 将数据的时间戳信息编码
-            attn_bias_temporal = self.temporal_node_feature(time_stamps)
+            # time_stamps = None #[x]todo: 将数据的时间戳信息编码
+            # attn_bias_temporal = self.temporal_node_feature(time_stamps)
+            attn_bias_temporal = None
         else: 
             attn_bias_temporal = None
             

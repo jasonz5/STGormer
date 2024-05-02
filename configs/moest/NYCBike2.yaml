@@ -8,7 +8,7 @@ debug: False
 ## data
 data_dir: data
 dataset: NYCBike2 
-input_length: 35
+input_length: 35  # 8+9*3
 batch_size: 32
 test_batch_size: 32
 graph_file: data/NYCBike2/adj_mx.npz  # num_nodes 200 (20 x 10)

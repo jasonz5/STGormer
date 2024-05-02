@@ -29,7 +29,7 @@ epochs: 100
 lr_init: 0.001
 ## mask value setting ##
 mask_value_train: 5.0
-mask_value_test: Null # 5.0 | Null $important$
+mask_value_test: 5.0 # 5.0 | Null $important$
 ## mask value setting ##
 early_stop: True
 early_stop_patience: 15

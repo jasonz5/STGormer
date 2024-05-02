@@ -4,16 +4,34 @@ import torch.nn as nn
 import torch.nn.functional as F 
 import numpy as np
 import scipy.sparse.csgraph as csgraph
-
+  
 class TemporalNodeFeature(nn.Module):
-    def __init__(self, num_timestamps, d_model):
+    """
+    We assume that input shape is B, T
+        - Only contains temporal information with index
+    Arguments:
+        - vocab_size: total number of temporal features (e.g., 7 days)
+        - freq_act: periodic activation function
+        - n_freq: number of hidden elements for frequency components
+            - if 0 or H, it only uses linear or frequency component, respectively
+    """
+    def __init__(self, hidden_size, vocab_size, freq_act = torch.sin, n_freq = 1):
         super(TemporalNodeFeature, self).__init__()
-        self.temporal_encoder = nn.Embedding(num_timestamps, d_model)
+        self.embedding = nn.Embedding(vocab_size, hidden_size)
+        self.linear = nn.Linear(hidden_size, hidden_size)
+        self.freq_act = freq_act
+        self.n_freq = n_freq
 
-    def forward(self, timestamps):
-        # timestamps: [t]  
-        temporal_feature = self.temporal_encoder(timestamps) # [t, d]
-        return temporal_feature
+    def forward(self, x):
+        x_emb = self.embedding(x)
+        x_weight = self.linear(x_emb)
+        if self.n_freq == 0:
+            return x_weight
+        if self.n_freq == x_emb.size(-1):
+            return self.freq_act(x_weight)
+        x_linear = x_weight[...,self.n_freq:]
+        x_act = self.freq_act(x_weight[...,:self.n_freq])
+        return torch.cat([x_linear, x_act], dim = -1)
 
 class SpatialNodeFeature(nn.Module):
     def __init__(self, num_degree, d_model):
