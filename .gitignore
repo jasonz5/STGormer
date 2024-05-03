@@ -3,6 +3,8 @@ data/BJTaxi/
 data/NYCBike1/
 data/NYCBike2/
 data/NYCTaxi/
+data/METRLA/
+data/PEMSBAY/
 data/*.zip
 
 experiments/*
