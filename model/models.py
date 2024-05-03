@@ -40,12 +40,12 @@ class MoESTar(nn.Module):
     def forward(self, view, graph):
         # Filter 
         if self.fft_status:
-            # view: n,l,v,c -> n,c,v,l -> n,l,v,c
+            # view: b,t,n,c -> b,c,n,t -> b,t,n,c
             view = view.permute(0, 3, 2, 1)
             view = self.filter(view)
             view = view.permute(0, 3, 2, 1)
-        repr, aux_loss = self.encoder(view, graph) # view: n,l,v,c; graph: v,v 
-        return repr, aux_loss  #nl(=1)vc
+        repr, aux_loss = self.encoder(view, graph) # view: b,t,n,c; graph: n,n 
+        return repr, aux_loss  #bt(=1)nc
 
     def predict(self, repr):
         '''Predicting future traffic flow.

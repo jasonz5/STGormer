@@ -1,5 +1,6 @@
 # Ignore specific folder in the data directory
 data/BJTaxi/
+data/NYCBike1/
 data/NYCBike2/
 data/NYCTaxi/
 data/*.zip
