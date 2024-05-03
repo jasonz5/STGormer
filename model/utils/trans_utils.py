@@ -23,6 +23,8 @@ class TemporalNodeFeature(nn.Module):
         self.n_freq = n_freq
 
     def forward(self, x):
+        # args: x [B, T]
+        # return: [B, T, D]
         x_emb = self.embedding(x)
         x_weight = self.linear(x_emb)
         if self.n_freq == 0:
@@ -39,7 +41,8 @@ class SpatialNodeFeature(nn.Module):
         self.degree_encoder = nn.Embedding(num_degree, d_model)
 
     def forward(self, degree):
-        # degree: [n]  
+        # args: degree [n]
+        # return: [n, D]
         degree_feature = self.degree_encoder(degree) # [n, d]
         return degree_feature
 

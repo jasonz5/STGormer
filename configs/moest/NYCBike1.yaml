@@ -13,6 +13,7 @@ batch_size: 32
 test_batch_size: 32
 graph_file: data/NYCBike1/adj_mx.npz # 128 x 128
 num_nodes: 128
+num_timestamps: 168 # 24*7
 
 ## Frequency
 fft_status: False
@@ -39,12 +40,11 @@ layer_depth: 1    # depth for one S/T Attention Module
 dropout: 0.1
 yita: 0.6                   # balance for inflow loss and outflow loss, $yita * inflow + (1 - yita) * outflow$
 ## spatio-temporal information injection
+pos_embed_T: True
+cen_embed_S: True # Spatial Centrality Encoding
+attn_bias_S: True
 attn_mask_S: False
 attn_mask_T: False
-attn_bias_S: False
-attn_bias_T: False # 没有设置attn_bias_T 
-pos_embed_T: True
-cen_embed_S: False # Spatial Centrality Encoding
 
 ## train
 epochs: 250

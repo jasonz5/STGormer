@@ -5,7 +5,7 @@ import torch.nn.functional as F
 import torch.nn.init as init
 
 import sys
-from .positional_encoding import PositionalEncoding
+from .positional_encoding import Positional1DEncoding
 from .transformer_layers import TrandformerEncoder
 from .utils.trans_utils import TemporalNodeFeature, SpatialNodeFeature, SpatialAttnBias, generate_moe_posList
 
@@ -22,24 +22,22 @@ class STAttention(nn.Module):
         self.mlp_ratio = mlp_ratio
         self.layer_depth = layer_depth
         self.layers = layers
-        self.attn_mask_S = args_attn["attn_mask_S"]
-        self.attn_mask_T = args_attn["attn_mask_T"]
-        self.attn_bias_S = args_attn["attn_bias_S"]
-        self.attn_bias_T = args_attn["attn_bias_T"]
         self.pos_embed_T = args_attn["pos_embed_T"]
-        self.cen_embed_S = args_attn["cen_embed_S"]
-        self.num_spatial = args_attn["num_spatial"]
-        self.num_degree = args_attn["num_degree"]
         self.num_timestamps = args_attn["num_timestamps"]
+        self.cen_embed_S = args_attn["cen_embed_S"]
+        self.attn_mask_S = args_attn["attn_mask_S"]
+        self.num_shortpath = args_attn["num_shortpath"]
+        self.num_node_deg = args_attn["num_node_deg"]
+        self.attn_bias_S = args_attn["attn_bias_S"]
+        self.attn_mask_T = args_attn["attn_mask_T"]
         
         # temporal encoding
-        self.pos_mat=None
-        self.positional_encoding = PositionalEncoding()
-        # spatial encoding
+        self.positional_encoding_1d = Positional1DEncoding()
         self.temporal_node_feature = TemporalNodeFeature(hidden_size=self.embed_dim, vocab_size = self.num_timestamps)
-        self.cat_timestamps = nn.Linear(embed_dim * 2, embed_dim) # Cat speed information and TIM information
-        self.spatial_node_feature = SpatialNodeFeature(self.num_degree, self.embed_dim)
-        self.spatial_attn_bias = SpatialAttnBias(self.num_spatial, bias_dim=1)
+        # spatial encoding
+        self.spatial_node_feature = SpatialNodeFeature(self.num_node_deg, self.embed_dim)
+        self.cat_st_embed = nn.Linear(embed_dim * 3, embed_dim)
+        self.spatial_attn_bias = SpatialAttnBias(self.num_shortpath, bias_dim=1)
         
         self.project = FCLayer(in_channel, embed_dim)
         
@@ -60,45 +58,35 @@ class STAttention(nn.Module):
         """
         # project the #dim of input flow to #embed_dim
         patches = self.project(history_data.permute(0, 3, 1, 2)) # nlvc->nclv
-        encoder_input = patches.permute(0, 3, 2, 1)         # B, N, P, d
-        batch_size, num_nodes, num_time, num_dim = encoder_input.shape
+        encoder_input = patches.permute(0, 3, 2, 1)         # B, N, T, D
+        B, N, T, D = encoder_input.shape
         
-        # temporal positional embedding
-        if  self.pos_embed_T:
-            #TODO: fix
-            time_feature =  self.temporal_node_feature(time_stamps)
-            encoder_input = self.cat_timestamps(torch.cat([encoder_input, time_feature], dim = -1))
-            # encoder_input, self.pos_mat = self.positional_encoding(encoder_input)# B, N, P, d
-        
-        ## 计算时间和空间的掩码矩阵 ##
-        if self.attn_mask_S:
-            # maskS = graph.to('cuda')
-            maskS = torch.ones((num_nodes, num_nodes)).to('cuda')
-            torch.diagonal(maskS).fill_(0)
-        else:
-            maskS = None
-        if self.attn_mask_T:
-            maskT = torch.tril(torch.ones((num_time, num_time))).to('cuda')
-        else:
-            maskT = None
-        
-        # add spatial node degree information
-        if self.cen_embed_S:
+        if  self.pos_embed_T and self.cen_embed_S:
+            # temporal timestamps feature
+            time_feature =  self.temporal_node_feature(time_stamps) # [B, T] -> [B, T, D]
+            # spatial node degree information
             degree = graph.sum(dim=-1).long()
-            degree_feature = self.spatial_node_feature(degree) # [n, d]
-            degree_feature = degree_feature.view(1, num_nodes, 1, num_dim)
-            encoder_input = encoder_input + degree_feature # [b, n, t, d] [1, n, 1, d]
+            degree_feature = self.spatial_node_feature(degree) # [N, D]
+            # concatenation
+            encoder_input = self.cat_st_embed(
+                torch.cat([encoder_input, time_feature.view(B,1,T,D), degree_feature.view(1,N,1,D)], dim = -1))
+        else: # Transformer传统的1D位置编码
+            encoder_input = encoder_input.contiguous().view(B*N, T, D)
+            encoder_input, _ = self.positional_encoding_1d(encoder_input) # B*N, T, D
+            encoder_input = encoder_input.view(B, N, T, D) # B, N, T, D
+            
+        ## 计算时间和空间的掩码矩阵 ##
+        maskS, maskT = None, None
+        if self.attn_mask_S:
+            maskS = torch.ones((N, N)).to('cuda')
+            torch.diagonal(maskS).fill_(0)
+        if self.attn_mask_T:
+            maskT = torch.tril(torch.ones((T, T))).to('cuda')
+        
         ## 计算spatial的attn bias
+        attn_bias_spatial = None
         if self.attn_bias_S:
             attn_bias_spatial = self.spatial_attn_bias(graph) # [n, n, 1]
-        else: 
-            attn_bias_spatial = None
-        if self.attn_bias_T:
-            # time_stamps = None #[x]todo: 将数据的时间戳信息编码
-            # attn_bias_temporal = self.temporal_node_feature(time_stamps)
-            attn_bias_temporal = None
-        else: 
-            attn_bias_temporal = None
             
         aux_loss = torch.tensor(0, dtype=torch.float32).to('cuda')
         layers_full = ['T'] + self.layers
@@ -109,8 +97,7 @@ class STAttention(nn.Module):
                 encoder_input, loss, *_ = self.st_encoder[i-1](encoder_input, 
                         mask=maskS, attn_bias = attn_bias_spatial)
             else: # == 'T'
-                encoder_input, loss, *_ = self.st_encoder[i-1](encoder_input, 
-                        mask=maskT, attn_bias = attn_bias_temporal)
+                encoder_input, loss, *_ = self.st_encoder[i-1](encoder_input, mask=maskT)
             aux_loss += loss
         if layers_full[-1] == 'S':
             encoder_input = encoder_input.transpose(-2,-3)

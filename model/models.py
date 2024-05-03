@@ -20,11 +20,10 @@ class MoESTar(nn.Module):
                     "moe_dropout": args.moe_dropout, "top_k": args.top_k, 
                     "moe_add_ff": args.moe_add_ff, 
                     "expertWeightsAda": args.expertWeightsAda, 'expertWeights': args.expertWeights}
-        args_attn = {"attn_mask_S": args.attn_mask_S, "attn_mask_T": args.attn_mask_T,
-                    "attn_bias_S": args.attn_bias_S, "attn_bias_T": args.attn_bias_T,
-                    "pos_embed_T": args.pos_embed_T, "cen_embed_S": args.cen_embed_S,
-                    "num_spatial": args.num_spatial, "num_degree": args.num_degree,
-                    "num_timestamps": args.num_timestamps}
+        args_attn = {"pos_embed_T": args.pos_embed_T, "num_timestamps": args.num_timestamps,
+                    "cen_embed_S": args.cen_embed_S, "attn_bias_S": args.attn_bias_S,
+                    "num_shortpath": args.num_shortpath, "num_node_deg": args.num_node_deg,
+                    "attn_mask_S": args.attn_mask_S, "attn_mask_T": args.attn_mask_T}
         self.encoder = STAttention(
             args.d_input, args.d_model, args.num_heads, args.mlp_ratio,
             args.layer_depth, args.dropout, args.layers, args_attn = args_attn, 
