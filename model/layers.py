@@ -7,7 +7,7 @@ import torch.nn.init as init
 import sys
 from .positional_encoding import Positional1DEncoding
 from .transformer_layers import TrandformerEncoder
-from .utils.trans_utils import TemporalNodeFeature, SpatialNodeFeature, SpatialAttnBias, generate_moe_posList
+from .utils.trans_utils import TemporalNodeFeature, SpatialNodeFeature, SpatialAttnBias, generate_moe_posList, get_degree_array
 
 class STAttention(nn.Module):
 
@@ -31,16 +31,19 @@ class STAttention(nn.Module):
         self.num_node_deg = args_attn["num_node_deg"]
         self.attn_bias_S = args_attn["attn_bias_S"]
         self.attn_mask_T = args_attn["attn_mask_T"]
+        self.d_time_embed = args_attn["d_time_embed"]
+        self.d_space_embed = args_attn["d_space_embed"]
         
         # temporal encoding
         self.positional_encoding_1d = Positional1DEncoding()
-        self.temporal_node_feature = TemporalNodeFeature(self.embed_dim, self.num_timestamps, scaler=self.tod_scaler)
+        self.temporal_node_feature = TemporalNodeFeature(self.d_time_embed, self.num_timestamps, 
+                                    scaler=self.tod_scaler, steps_per_day = args_attn["steps_per_day"])
         # spatial encoding
-        self.spatial_node_feature = SpatialNodeFeature(self.num_node_deg, self.embed_dim)
-        self.cat_st_embed = nn.Linear(embed_dim * 3, embed_dim)
+        self.spatial_node_feature = SpatialNodeFeature(self.num_node_deg, self.d_space_embed)
+        self.cat_st_embed = nn.Linear(embed_dim+self.d_time_embed+self.d_space_embed, embed_dim)
         self.spatial_attn_bias = SpatialAttnBias(self.num_shortpath, bias_dim=1)
         
-        self.project = FCLayer(in_channel, embed_dim)
+        self.project = nn.Linear(in_channel, embed_dim)
         
         # 确定MoE化位置
         moe_posList = generate_moe_posList(layers, moe_position)
@@ -54,29 +57,29 @@ class STAttention(nn.Module):
 
     def encoding(self, history_data, graph):
         """
-        Args: history_data (torch.Tensor): history flow data [B, T, N, c]
+        Args: history_data (torch.Tensor): history flow data [B, T, N, C]
         Returns: torch.Tensor: hidden states
         """
         ### fetch the tod/dow
-        history_data = history_data.permute(0, 2, 1, 3 ) # [B, N, T, c]
+        history_data = history_data.permute(0, 2, 1, 3) # [B, N, T, C]
         tod = history_data[..., -2]
         dow = history_data[..., -1]
-        history_data = history_data[..., :self.in_channel]
-        # project the #dim of input flow to #embed_dim
-        patches = self.project(history_data.permute(0, 3, 2, 1)) # [B, N, T, C]->[B,D,T,N]
-        encoder_input = patches.permute(0, 3, 2, 1)         # B, N, T, D
+        flow_data = history_data[..., :self.in_channel]
+        # project the #dim of input to #embed_dim
+        encoder_input = self.project(flow_data)  # B, N, T, D
         B, N, T, D = encoder_input.shape
         
         if  self.pos_embed_T and self.cen_embed_S:
             # temporal timestamps feature
             time_feature =  self.temporal_node_feature(tod, dow) # [B, N, T] -> [B, N, T, D]
             # spatial node degree information
-            degree = graph.sum(dim=-1).long()
-            degree_feature = self.spatial_node_feature(degree) # [N, D]
+            degree = get_degree_array(graph) # [N]
+            degree_feature = self.spatial_node_feature(degree)\
+                .view(1,N,1,-1).expand(B, N, T, self.d_space_embed) # [N, D] -> [B, N, T, D]
             # concatenation
             # import ipdb; ipdb.set_trace()
             encoder_input = self.cat_st_embed(
-                torch.cat([encoder_input, time_feature, degree_feature.view(1,N,1,D).expand(B, N, T, D)], dim = -1))
+                torch.cat([encoder_input, time_feature, degree_feature], dim = -1))
         else: # Transformer传统的1D位置编码
             encoder_input = encoder_input.contiguous().view(B*N, T, D)
             encoder_input, _ = self.positional_encoding_1d(encoder_input) # B*N, T, D
@@ -110,9 +113,8 @@ class STAttention(nn.Module):
             encoder_input = encoder_input.transpose(-2,-3)
         return encoder_input, aux_loss
 
-    def forward(self, history_data, graph=None): # history_data: [B,T,N,D]; graph: [N,N] 
+    def forward(self, history_data, graph=None): # history_data: [B,T,N,C]; graph: [N,N] 
         repr, aux_loss = self.encoding(history_data, graph) # [B, N, T, D]
-        repr = repr.transpose(-2,-3) # [B, T, N, D]
         return repr, aux_loss
 
 
@@ -120,23 +122,16 @@ class STAttention(nn.Module):
 ## An MLP predictor
 ########################################
 class MLP(nn.Module):
-    def __init__(self, c_in, c_out): 
+    def __init__(self, input_dim, output_dim):
         super(MLP, self).__init__()
-        self.fc1 = FCLayer(c_in, int(c_in // 2))
-        self.fc2 = FCLayer(int(c_in // 2), c_out)
-
+        self.network = nn.Sequential(
+            nn.Linear(input_dim, int(input_dim // 2)),
+            nn.Tanh(),
+            nn.Linear(int(input_dim // 2), output_dim)
+        )
     def forward(self, x):
-        x = torch.tanh(self.fc1(x.permute(0, 3, 1, 2))) # nlvc->nclv
-        x = self.fc2(x).permute(0, 2, 3, 1) # nclv->nlvc
+        x = self.network(x)
         return x
-
-class FCLayer(nn.Module):
-    def __init__(self, c_in, c_out):
-        super(FCLayer, self).__init__()
-        self.linear = nn.Conv2d(c_in, c_out, 1)  
-
-    def forward(self, x):
-        return self.linear(x)
     
 ########################################
 ## Test Function

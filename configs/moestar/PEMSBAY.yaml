@@ -3,7 +3,7 @@ seed: 31
 device: cuda
 mode: train
 best_path: Null  #experiments/***/best_model.pth  # Null 
-debug: False  
+debug: True  
 
 ## data 
 data_dir: data
@@ -16,6 +16,7 @@ graph_file: data/PEMSBAY/adj_mx.npz
 num_nodes: 325
 num_timestamps: 2016 # 12*24*7
 tod_scaler: 288
+steps_per_day: 288
 
 ## MoE
 moe_status: SoftMoE # SoftMoE / SharedMoE / MoE / STMoE / None
@@ -33,6 +34,8 @@ layers: ['S','T','S','T']
 d_input: 1  # speed
 d_output: 1  # speed
 d_model: 64
+d_time_embed: 32
+d_space_embed: 32
 num_heads: 4
 mlp_ratio: 4
 layer_depth: 1    # depth for one S/T Attention Module

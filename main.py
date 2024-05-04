@@ -99,8 +99,8 @@ def model_supervisor(args):
 if __name__=='__main__':
     # python main.py -g=$1 -s=$2
     parser = argparse.ArgumentParser()
-    parser.add_argument('-g', '--gpu_id', type=str, default='1', help='GPU ID to use')
-    parser.add_argument('--config_filename', default='configs/moestar/NYCBike1.yaml', 
+    parser.add_argument('-g', '--gpu_id', type=str, default='7', help='GPU ID to use')
+    parser.add_argument('--config_filename', default='configs/moestar/METRLA.yaml', 
                     type=str, help='the configuration to use')
     parser.add_argument('-s', '--save_path', type=str, default=None, help='save path of log file')
     args = parser.parse_args()

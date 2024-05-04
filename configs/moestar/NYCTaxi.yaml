@@ -3,7 +3,7 @@ seed: 31
 device: cuda
 mode: train
 best_path: Null 
-debug: False 
+debug: True 
 
 ## data
 data_dir: data
@@ -16,6 +16,7 @@ graph_file: data/NYCTaxi/adj_mx.npz
 num_nodes: 200
 num_timestamps: 336 # 48*7
 tod_scaler: 1
+steps_per_day: 48
 
 ## MoE
 moe_status: SoftMoE # SoftMoE / SharedMoE / MoE / STMoE / None
@@ -33,9 +34,11 @@ layers: ['S','T','S','T']
 d_input: 2  # inflow and outflow
 d_output: 2  # inflow and outflow
 d_model: 64
+d_time_embed: 32
+d_space_embed: 32
 num_heads: 4
 mlp_ratio: 4
-encoder_depth: 1
+layer_depth: 1    # depth for one S/T Attention Module
 dropout: 0.1
 yita: 0.5 # balance for inflow loss and outflow loss, $yita * inflow + (1 - yita) * outflow$
 fft_status: False # Frequency

@@ -15,18 +15,19 @@ class TemporalNodeFeature(nn.Module):
         - n_freq: number of hidden elements for frequency components
             - if 0 or H, it only uses linear or frequency component, respectively
     """
-    def __init__(self, hidden_size, vocab_size, scaler=1, freq_act = torch.sin, n_freq = 1):
+    def __init__(self, hidden_size, vocab_size, scaler=1, steps_per_day=24, freq_act = torch.sin, n_freq = 1):
         super(TemporalNodeFeature, self).__init__()
         self.embedding = nn.Embedding(vocab_size, hidden_size)
         self.linear = nn.Linear(hidden_size, hidden_size)
         self.freq_act = freq_act
         self.n_freq = n_freq
         self.scaler = scaler
+        self.steps_per_day = steps_per_day
 
     def forward(self, tod, dow):
         # args: x [B, T]
         # return: [B, T, D]
-        x = tod*self.scaler + dow
+        x = (tod*self.scaler).int() + dow*self.steps_per_day
         x_emb = self.embedding(x.long())
         x_weight = self.linear(x_emb)
         if self.n_freq == 0:
@@ -47,6 +48,13 @@ class SpatialNodeFeature(nn.Module):
         # return: [n, D]
         degree_feature = self.degree_encoder(degree) # [n, d]
         return degree_feature
+
+'''
+1. floyd_warshall算法的要求
+    + 矩阵的对角线元素应该设置为零，表示从任何节点到其自身的距离为零
+    + 矩阵中的元素代表从一个节点到另一个节点的边的权重。
+    + 如果两个节点没有直接连接，相应的矩阵元素通常为numpy.inf
+'''
 
 class SpatialAttnBias(nn.Module):
     def __init__(self, num_spatial, bias_dim=1):
@@ -70,11 +78,6 @@ class SpatialAttnBias(nn.Module):
         spatial_pos_bias = self.spatial_pos_encoder(shortest_path)
         return spatial_pos_bias
 
-def get_num_degree(graph):
-    degree = graph.sum(dim=-1)
-    num_degree = int(torch.max(degree)) + 1
-    return num_degree
-
 def get_shortpath_num(graph):
     graph = modify_graph(graph)
     if graph.is_cuda:
@@ -86,15 +89,26 @@ def get_shortpath_num(graph):
     num_spatial = int(torch.max(shortest_path)) + 1
     return num_spatial
     
-
 # Replace 0s with float('inf'), except on the diagonal
 def modify_graph(graph):
     modified_graph = graph.clone().float()
     inf_mask = (graph == 0) & ~torch.eye(graph.size(0), dtype=torch.bool, device=graph.device)
     modified_graph[inf_mask] = float('inf')
-    # torch.diagonal(modified_graph)[:] = 0
+    torch.diagonal(modified_graph)[:] = 0
     return modified_graph
 
+def get_num_degree(graph):
+    dge_graph = (graph != 0).int()
+    torch.diagonal(dge_graph)[:] = 0
+    degree = dge_graph.sum(dim=-1)
+    num_degree = int(torch.max(degree)) + 1
+    return num_degree
+
+def get_degree_array(graph):
+    dge_graph = (graph != 0).int()
+    torch.diagonal(dge_graph)[:] = 0
+    degree = dge_graph.sum(dim=-1)
+    return degree
 
 def generate_moe_posList(layers, moe_position):
     length = len(layers)

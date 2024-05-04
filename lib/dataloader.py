@@ -99,24 +99,43 @@ def get_dataloader(data_dir, dataset, d_input, batch_size, test_batch_size, scal
     # Construct dataloader
     dataloader = {}
     dataloader['train'] = STDataloader(
-        data['x_train'], 
-        data['y_train'][..., :d_input], 
+        data['x_train'][:32,:,:,:], 
+        data['y_train'][:32,:,:, :d_input], 
         batch_size, 
         shuffle=True
     )
     dataloader['val'] = STDataloader(
-        data['x_val'], 
-        data['y_val'][..., :d_input], 
+        data['x_val'][:32,:,:,:], 
+        data['y_val'][:32,:,:, :d_input], 
         test_batch_size, 
         shuffle=False
     )
     dataloader['test'] = STDataloader(
-        data['x_test'], 
-        data['y_test'][..., :d_input], 
+        data['x_test'][:32,:,:,:], 
+        data['y_test'][:32,:,:, :d_input], 
         test_batch_size, 
         shuffle=False, 
         drop_last=False
     )
+    # dataloader['train'] = STDataloader(
+    #     data['x_train'], 
+    #     data['y_train'][..., :d_input], 
+    #     batch_size, 
+    #     shuffle=True
+    # )
+    # dataloader['val'] = STDataloader(
+    #     data['x_val'], 
+    #     data['y_val'][..., :d_input], 
+    #     test_batch_size, 
+    #     shuffle=False
+    # )
+    # dataloader['test'] = STDataloader(
+    #     data['x_test'], 
+    #     data['y_test'][..., :d_input], 
+    #     test_batch_size, 
+    #     shuffle=False, 
+    #     drop_last=False
+    # )
     dataloader['scaler'] = scaler
     return dataloader
 

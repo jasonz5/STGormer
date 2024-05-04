@@ -16,6 +16,7 @@ graph_file: data/NYCBike1/adj_mx.npz
 num_nodes: 128
 num_timestamps: 168 # 24*7
 tod_scaler: 1
+steps_per_day: 24
 
 ## MoE
 moe_status: SoftMoE # SoftMoE / SharedMoE / MoE / STMoE / None
@@ -33,6 +34,8 @@ layers: ['S','T','S','T']
 d_input: 2  # inflow and outflow
 d_output: 2  # inflow and outflow
 d_model: 64
+d_time_embed: 32
+d_space_embed: 32
 num_heads: 4
 mlp_ratio: 4
 layer_depth: 1    # depth for one S/T Attention Module
