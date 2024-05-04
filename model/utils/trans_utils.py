@@ -15,17 +15,19 @@ class TemporalNodeFeature(nn.Module):
         - n_freq: number of hidden elements for frequency components
             - if 0 or H, it only uses linear or frequency component, respectively
     """
-    def __init__(self, hidden_size, vocab_size, freq_act = torch.sin, n_freq = 1):
+    def __init__(self, hidden_size, vocab_size, scaler=1, freq_act = torch.sin, n_freq = 1):
         super(TemporalNodeFeature, self).__init__()
         self.embedding = nn.Embedding(vocab_size, hidden_size)
         self.linear = nn.Linear(hidden_size, hidden_size)
         self.freq_act = freq_act
         self.n_freq = n_freq
+        self.scaler = scaler
 
-    def forward(self, x):
+    def forward(self, tod, dow):
         # args: x [B, T]
         # return: [B, T, D]
-        x_emb = self.embedding(x)
+        x = tod*self.scaler + dow
+        x_emb = self.embedding(x.long())
         x_weight = self.linear(x_emb)
         if self.n_freq == 0:
             return x_weight

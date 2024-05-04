@@ -1,0 +1,68 @@
+## global
+seed: 31
+device: cuda
+mode: train
+best_path: Null 
+debug: False 
+
+## data
+data_dir: data
+dataset: NYCTaxi 
+input_length: 35 # 8+9*3
+output_length: 1
+batch_size: 32
+test_batch_size: 32
+graph_file: data/NYCTaxi/adj_mx.npz
+num_nodes: 200
+num_timestamps: 336 # 48*7
+tod_scaler: 1
+
+## MoE
+moe_status: SoftMoE # SoftMoE / SharedMoE / MoE / STMoE / None
+moe_mlr: False  # learning rate of experts
+num_experts: 6
+moe_dropout: 0.1
+top_k: 1
+moe_add_ff: False # STMoE
+moe_position: Full  # Full / Half / woS / woT / woST
+expertWeightsAda: False # SharedMoE
+expertWeights: [0.8, 0.2] # SharedMoE
+
+## model 
+layers: ['S','T','S','T']
+d_input: 2  # inflow and outflow
+d_output: 2  # inflow and outflow
+d_model: 64
+num_heads: 4
+mlp_ratio: 4
+encoder_depth: 1
+dropout: 0.1
+yita: 0.5 # balance for inflow loss and outflow loss, $yita * inflow + (1 - yita) * outflow$
+fft_status: False # Frequency
+## spatio-temporal information injection
+pos_embed_T: True
+cen_embed_S: True # Spatial Centrality Encoding
+attn_bias_S: True
+attn_mask_S: False
+attn_mask_T: False
+
+## train 
+epochs: 250
+# learning rate #
+lr_init: 2.0e-3
+scheduler: MultiStepLR # StepLR MultiStepLR ExponentialLR ReduceLROnPlateau
+step_size: 30 # StepLR
+milestones: [1, 60, 90, 120, 150] # MultiStepLR
+factor: 0.8 # ReduceLROnPlateau
+patience: 10 # ReduceLROnPlateau
+gamma: 0.5 # StepLR MultiStepLR ExponentialLR
+# mask value setting #
+mask_value_train: 5.0
+mask_value_test: 5.0
+# others #
+early_stop: True
+early_stop_patience: 25
+grad_norm: True
+max_grad_norm: 5
+use_dwa: False # whether to use dwa for loss balance
+temp: 2 # tempurature parameter in dwa, a larger T means more similer weights

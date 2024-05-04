@@ -39,6 +39,7 @@ def get_param_groups(model, base_learning_rate, num_experts, top_k, moe_status):
     per_expert_lr = base_learning_rate / math.sqrt(num_experts//top_k)
     param_groups = []
     for name, param in model.named_parameters():
+        # moe_status: SharedMoE / MoE / STMoE
         if moe_status == "SharedMoE":
             if "selectedExpert" in name:
                 param_groups.append({ "params": param, "lr": per_expert_lr })

@@ -31,11 +31,12 @@ def model_supervisor(args):
     dataloader = get_dataloader(
         data_dir=args.data_dir, 
         dataset=args.dataset, 
+        d_input=args.d_input,
         batch_size=args.batch_size, 
         test_batch_size=args.test_batch_size,
     )
     graph = load_graph(args.graph_file, device=args.device)
-    args.num_nodes = len(graph)
+    assert args.num_nodes == len(graph), "num_nodes not right"
     args.num_shortpath = get_shortpath_num(graph)
     args.num_node_deg = get_num_degree(graph)
     
@@ -98,8 +99,8 @@ def model_supervisor(args):
 if __name__=='__main__':
     # python main.py -g=$1 -s=$2
     parser = argparse.ArgumentParser()
-    parser.add_argument('-g', '--gpu_id', type=str, default='7', help='GPU ID to use')
-    parser.add_argument('--config_filename', default='configs/moest/NYCBike1.yaml', 
+    parser.add_argument('-g', '--gpu_id', type=str, default='1', help='GPU ID to use')
+    parser.add_argument('--config_filename', default='configs/moestar/NYCBike1.yaml', 
                     type=str, help='the configuration to use')
     parser.add_argument('-s', '--save_path', type=str, default=None, help='save path of log file')
     args = parser.parse_args()

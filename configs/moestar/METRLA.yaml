@@ -1,0 +1,68 @@
+## global
+seed: 31
+device: cuda
+mode: train
+best_path: Null  #experiments/***/best_model.pth  # Null 
+debug: True  
+
+## data 
+data_dir: data
+dataset: METRLA  
+input_length: 12
+output_length: 12
+batch_size: 32
+test_batch_size: 32
+graph_file: data/PEMSBAY/adj_mx.npz
+num_nodes: 207
+num_timestamps: 2016 # 12*24*7
+tod_scaler: 288
+
+## MoE
+moe_status: SoftMoE # SoftMoE / SharedMoE / MoE / STMoE / None
+moe_mlr: False  # learning rate of experts
+num_experts: 6
+moe_dropout: 0.1
+top_k: 1
+moe_add_ff: False # STMoE
+moe_position: Full  # Full / Half / woS / woT / woST
+expertWeightsAda: False # SharedMoE
+expertWeights: [0.8, 0.2] # SharedMoE
+
+## model 
+layers: ['S','T','S','T']
+d_input: 1  # speed
+d_output: 1  # speed
+d_model: 64
+num_heads: 4
+mlp_ratio: 4
+layer_depth: 1    # depth for one S/T Attention Module
+dropout: 0.1
+yita: 0.6 # balance for inflow loss and outflow loss, $yita * inflow + (1 - yita) * outflow$
+fft_status: False # Frequency
+## spatio-temporal information injection
+pos_embed_T: True
+cen_embed_S: True # Spatial Centrality Encoding
+attn_bias_S: True
+attn_mask_S: False
+attn_mask_T: False
+
+## train
+epochs: 250
+# learning rate #
+lr_init: 2.0e-3
+scheduler: MultiStepLR # StepLR MultiStepLR ExponentialLR ReduceLROnPlateau
+step_size: 30 # StepLR
+milestones: [1, 60, 90, 120, 150] # MultiStepLR
+factor: 0.8 # ReduceLROnPlateau
+patience: 10 # ReduceLROnPlateau
+gamma: 0.5 # StepLR MultiStepLR ExponentialLR
+# mask value setting #
+mask_value_train: 0.0
+mask_value_test: Null
+# others #
+early_stop: True
+early_stop_patience: 25
+grad_norm: True
+max_grad_norm: 5
+use_dwa: False # whether to use dwa for loss balance
+temp: 4 # tempurature parameter in dwa, a larger T means more similer weights

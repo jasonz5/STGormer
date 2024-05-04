@@ -1,6 +1,7 @@
 # Ignore specific folder in the data directory
 data/*
 !data/*.ipynb
+!data/README.md
 
 experiments/*
 !experiments/*.ipynb

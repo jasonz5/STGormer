@@ -70,49 +70,49 @@ def STDataloader(X, Y, batch_size, shuffle=True, drop_last=True):
     )
     return dataloader
 
-def normalize_data(data, scalar_type='Standard'):
+def normalize_data(data, d_input, scalar_type='Standard'):
     scalar = None
     if scalar_type == 'MinMax01':
-        scalar = MinMax01Scaler(min=data.min(), max=data.max())
+        scalar = MinMax01Scaler(min=data[..., :d_input].min(), max=data[..., :d_input].max())
     elif scalar_type == 'MinMax11':
-        scalar = MinMax11Scaler(min=data.min(), max=data.max())
+        scalar = MinMax11Scaler(min=data[..., :d_input].min(), max=data[..., :d_input].max())
     elif scalar_type == 'Standard':
-        scalar = StandardScaler(mean=data.mean(), std=data.std())
+        scalar = StandardScaler(mean=data[..., :d_input].mean(), std=data[..., :d_input].std())
     else:
         raise ValueError('scalar_type is not supported in data_normalization.')
     # print('{} scalar is used!!!'.format(scalar_type))
     # time.sleep(3)
     return scalar
 
-def get_dataloader(data_dir, dataset, batch_size, test_batch_size, scalar_type='Standard'):
+def get_dataloader(data_dir, dataset, d_input, batch_size, test_batch_size, scalar_type='Standard'):
     data = {}
     for category in ['train', 'val', 'test']:
         cat_data = np.load(os.path.join(data_dir, dataset, category + '.npz'))
         data['x_' + category] = cat_data['x']
         data['y_' + category] = cat_data['y']
-    scaler = normalize_data(np.concatenate([data['x_train'], data['x_val']], axis=0), scalar_type)
+    scaler = normalize_data(np.concatenate([data['x_train'], data['x_val']], axis=0), d_input, scalar_type)
     
     # Data format
     for category in ['train', 'val', 'test']:
-        data['x_' + category] = scaler.transform(data['x_' + category])
-        data['y_' + category] = scaler.transform(data['y_' + category])
+        data['x_' + category][..., :d_input] = scaler.transform(data['x_' + category][..., :d_input])
+        data['y_' + category][..., :d_input] = scaler.transform(data['y_' + category][..., :d_input])
     # Construct dataloader
     dataloader = {}
     dataloader['train'] = STDataloader(
         data['x_train'], 
-        data['y_train'], 
+        data['y_train'][..., :d_input], 
         batch_size, 
         shuffle=True
     )
     dataloader['val'] = STDataloader(
         data['x_val'], 
-        data['y_val'], 
+        data['y_val'][..., :d_input], 
         test_batch_size, 
         shuffle=False
     )
     dataloader['test'] = STDataloader(
         data['x_test'], 
-        data['y_test'], 
+        data['y_test'][..., :d_input], 
         test_batch_size, 
         shuffle=False, 
         drop_last=False

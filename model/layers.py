@@ -24,6 +24,7 @@ class STAttention(nn.Module):
         self.layers = layers
         self.pos_embed_T = args_attn["pos_embed_T"]
         self.num_timestamps = args_attn["num_timestamps"]
+        self.tod_scaler = args_attn["tod_scaler"]
         self.cen_embed_S = args_attn["cen_embed_S"]
         self.attn_mask_S = args_attn["attn_mask_S"]
         self.num_shortpath = args_attn["num_shortpath"]
@@ -33,7 +34,7 @@ class STAttention(nn.Module):
         
         # temporal encoding
         self.positional_encoding_1d = Positional1DEncoding()
-        self.temporal_node_feature = TemporalNodeFeature(hidden_size=self.embed_dim, vocab_size = self.num_timestamps)
+        self.temporal_node_feature = TemporalNodeFeature(self.embed_dim, self.num_timestamps, scaler=self.tod_scaler)
         # spatial encoding
         self.spatial_node_feature = SpatialNodeFeature(self.num_node_deg, self.embed_dim)
         self.cat_st_embed = nn.Linear(embed_dim * 3, embed_dim)
@@ -51,25 +52,31 @@ class STAttention(nn.Module):
                 args_moe if moe_posList[i]==1 else args_wo_moe)
             for i in range(len(layers))])
 
-    def encoding(self, history_data, graph, time_stamps = None):
+    def encoding(self, history_data, graph):
         """
-        Args: history_data (torch.Tensor): history flow data [B, P, N, d] # n,l,v,c
+        Args: history_data (torch.Tensor): history flow data [B, T, N, c]
         Returns: torch.Tensor: hidden states
         """
+        ### fetch the tod/dow
+        history_data = history_data.permute(0, 2, 1, 3 ) # [B, N, T, c]
+        tod = history_data[..., -2]
+        dow = history_data[..., -1]
+        history_data = history_data[..., :self.in_channel]
         # project the #dim of input flow to #embed_dim
-        patches = self.project(history_data.permute(0, 3, 1, 2)) # nlvc->nclv
+        patches = self.project(history_data.permute(0, 3, 2, 1)) # [B, N, T, C]->[B,D,T,N]
         encoder_input = patches.permute(0, 3, 2, 1)         # B, N, T, D
         B, N, T, D = encoder_input.shape
         
         if  self.pos_embed_T and self.cen_embed_S:
             # temporal timestamps feature
-            time_feature =  self.temporal_node_feature(time_stamps) # [B, T] -> [B, T, D]
+            time_feature =  self.temporal_node_feature(tod, dow) # [B, N, T] -> [B, N, T, D]
             # spatial node degree information
             degree = graph.sum(dim=-1).long()
             degree_feature = self.spatial_node_feature(degree) # [N, D]
             # concatenation
+            # import ipdb; ipdb.set_trace()
             encoder_input = self.cat_st_embed(
-                torch.cat([encoder_input, time_feature.view(B,1,T,D), degree_feature.view(1,N,1,D)], dim = -1))
+                torch.cat([encoder_input, time_feature, degree_feature.view(1,N,1,D).expand(B, N, T, D)], dim = -1))
         else: # Transformer传统的1D位置编码
             encoder_input = encoder_input.contiguous().view(B*N, T, D)
             encoder_input, _ = self.positional_encoding_1d(encoder_input) # B*N, T, D
@@ -103,10 +110,10 @@ class STAttention(nn.Module):
             encoder_input = encoder_input.transpose(-2,-3)
         return encoder_input, aux_loss
 
-    def forward(self, history_data, graph=None): # history_data: n,l,v,c; graph: v,v 
-        repr, aux_loss = self.encoding(history_data, graph) # B, N, P, d
-        repr = repr.transpose(-2,-3) # n,l,v,c
-        return repr[:,-1:,:,:], aux_loss
+    def forward(self, history_data, graph=None): # history_data: [B,T,N,D]; graph: [N,N] 
+        repr, aux_loss = self.encoding(history_data, graph) # [B, N, T, D]
+        repr = repr.transpose(-2,-3) # [B, T, N, D]
+        return repr, aux_loss
 
 
 ########################################
