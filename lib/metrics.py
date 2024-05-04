@@ -8,6 +8,13 @@ def mae_torch(pred, true, mask_value=None):
         true = torch.masked_select(true, mask)
     return torch.mean(torch.abs(true-pred))
 
+def rmse_torch(pred, true, mask_value=None):
+    if mask_value != None:
+        mask = torch.gt(true, mask_value)
+        pred = torch.masked_select(pred, mask)
+        true = torch.masked_select(true, mask)
+    return torch.sqrt(torch.mean(torch.square(true - pred)))
+
 def mape_torch(pred, true, mask_value=None):
     if mask_value != None:
         mask = torch.gt(true, mask_value)
@@ -22,6 +29,13 @@ def mae_np(pred, true, mask_value=None):
         pred = pred[mask]
     return np.mean(np.absolute(pred-true))
 
+def rmse_np(pred, true, mask_value=None):
+    if mask_value != None:
+        mask = np.where(true > (mask_value), True, False)
+        pred = pred[mask]
+        true = true[mask]
+    return np.sqrt(np.mean(np.square(true - pred)))
+
 def mape_np(pred, true, mask_value=None):
     if mask_value != None:
         mask = np.where(true > (mask_value), True, False)
@@ -29,17 +43,18 @@ def mape_np(pred, true, mask_value=None):
         pred = pred[mask]
     return np.mean(np.absolute(np.divide((true - pred), true)))
 
-def test_metrics(pred, true, mask1=5.0, mask2=5.0):
-    # mask1 filter the very small value, mask2 filter the value lower than a defined threshold
+def test_metrics(pred, true, mask=5.0):
     assert type(pred) == type(true)
     if type(pred) == np.ndarray:
-        mae  = mae_np(pred, true, mask1)
-        mape = mape_np(pred, true, mask2)
+        mae  = mae_np(pred, true, mask)
+        rmse = rmse_np(pred, true, mask)
+        mape = mape_np(pred, true, mask)
     elif type(pred) == torch.Tensor:
-        mae  = mae_torch(pred, true, mask1).item()
-        mape = mape_torch(pred, true, mask2).item()
+        mae  = mae_torch(pred, true, mask).item()
+        rmse = rmse_torch(pred, true, mask).item()
+        mape = mape_torch(pred, true, mask).item()
     else:
         raise TypeError
-    return mae, mape
+    return mae, rmse, mape
 
 
