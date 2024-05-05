@@ -57,50 +57,60 @@ class SpatialNodeFeature(nn.Module):
 '''
 
 class SpatialAttnBias(nn.Module):
-    def __init__(self, num_spatial, bias_dim=1):
+    def __init__(self, num_shortpath, bias_dim=1):
         super(SpatialAttnBias, self).__init__()
         self.bias_dim = bias_dim
-        self.num_spatial = num_spatial
-        self.spatial_pos_encoder = nn.Embedding(num_spatial, bias_dim)
+        self.num_shortpath = num_shortpath
+        self.attn_bias_encoder = nn.Embedding(num_shortpath, bias_dim)
         
-    def forward(self, graph):
-        # 使用 Floyd-Warshall 算法计算所有节点对的最短路径
-        graph = modify_graph(graph)
-        if graph.is_cuda:
-            graph = graph.cpu().numpy()
-        else:
-            graph = graph.numpy()
-        shortest_path = csgraph.floyd_warshall(graph, return_predecessors=False)
-        shortest_path = torch.tensor(shortest_path, dtype=torch.long, device='cuda')
-        num_spatial = int(torch.max(shortest_path)) + 1
-        assert self.num_spatial == num_spatial, "num_spatial结果不相等"
-        
-        spatial_pos_bias = self.spatial_pos_encoder(shortest_path)
-        return spatial_pos_bias
+    def forward(self, graph, dataset):
+        num_shortpath, shortest_path = get_shortpath_num(graph, dataset)
+        assert self.num_shortpath == num_shortpath, "num_shortpath结果不相等"
+        attn_bias_spatial = self.attn_bias_encoder(shortest_path)
+        return attn_bias_spatial
 
-def get_shortpath_num(graph):
-    graph = modify_graph(graph)
+def get_shortpath_num(graph, dataset):
     if graph.is_cuda:
         graph = graph.cpu().numpy()
     else:
         graph = graph.numpy()
+    if dataset in ['METRLA', 'PEMSBAY']:
+        graph = modify_graph_metr(graph)
+    else:
+        graph = modify_graph_nyc(graph)
+        
     shortest_path = csgraph.floyd_warshall(graph, return_predecessors=False)
-    shortest_path = torch.tensor(shortest_path, dtype=torch.long)
-    num_spatial = int(torch.max(shortest_path)) + 1
-    return num_spatial
     
-# Replace 0s with float('inf'), except on the diagonal
-def modify_graph(graph):
-    modified_graph = graph.clone().float()
-    inf_mask = (graph == 0) & ~torch.eye(graph.size(0), dtype=torch.bool, device=graph.device)
-    modified_graph[inf_mask] = float('inf')
-    torch.diagonal(modified_graph)[:] = 0
-    return modified_graph
+    if dataset in ['METRLA', 'PEMSBAY']:
+        shortest_path = np.where(np.isinf(shortest_path), -1, shortest_path * 100)
+        shortest_path = shortest_path + 1
+
+    shortest_path = torch.tensor(shortest_path, dtype=torch.int, device='cuda')
+    num_shortpath = int(torch.max(shortest_path)) + 1
+    return num_shortpath, shortest_path
+
+# for METRLA/PEMSBAY dataset
+# metr graph原形式：见DCRNN
+def modify_graph_metr(graph):
+    adj_matrix = np.array(graph, dtype=float)
+    non_zero_mask = adj_matrix != 0
+    adj_matrix[non_zero_mask] = np.sqrt(np.abs(np.log(adj_matrix[non_zero_mask])))
+    # 将原始矩阵中为0的元素设置为无穷大
+    adj_matrix[~non_zero_mask] = np.inf
+    # 将对角线上的元素设置为0
+    np.fill_diagonal(adj_matrix, 0)
+    return adj_matrix
+ 
+# Replace 0s with float('inf'), except on the diagonal for NYC* dataset
+# NYC* graph原形式： 对角线为0，其他地方1-连接，0-不连接
+def modify_graph_nyc(graph):
+    adj_matrix = np.array(graph, dtype=float)
+    adj_matrix[adj_matrix == 0] = np.inf
+    np.fill_diagonal(adj_matrix, 0)
+    return adj_matrix
 
 def get_num_degree(graph):
-    dge_graph = (graph != 0).int()
-    torch.diagonal(dge_graph)[:] = 0
-    degree = dge_graph.sum(dim=-1)
+    degree = get_degree_array(graph)
     num_degree = int(torch.max(degree)) + 1
     return num_degree
 

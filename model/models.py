@@ -29,7 +29,7 @@ class MoESTar(nn.Module):
         self.encoder = STAttention(
             args.d_input, args.d_model, args.num_heads, args.mlp_ratio,
             args.layer_depth, args.dropout, args.layers, args_attn = args_attn, 
-            args_moe = args_moe, moe_position = args.moe_position)
+            args_moe = args_moe, moe_position = args.moe_position, dataset = args.dataset)
         
         # traffic flow prediction branch
         if args.dataset in ['METRLA', 'PEMSBAY']:
@@ -68,10 +68,6 @@ class MoESTar(nn.Module):
         return out # [B, T, N, C]
 
     def loss(self, repr, y_true, scaler):
-        loss = self.pred_loss(repr, y_true, scaler)
-        return loss
-
-    def pred_loss(self, repr, y_true, scaler):
         y_pred = scaler.inverse_transform(self.predict(repr))
         y_true = scaler.inverse_transform(y_true)
  

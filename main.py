@@ -37,7 +37,7 @@ def model_supervisor(args):
     )
     graph = load_graph(args.graph_file, device=args.device)
     assert args.num_nodes == len(graph), "num_nodes not right"
-    args.num_shortpath = get_shortpath_num(graph)
+    args.num_shortpath, _ = get_shortpath_num(graph, args.dataset)
     args.num_node_deg = get_num_degree(graph)
     
     ## init model and set optimizer

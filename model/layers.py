@@ -14,7 +14,7 @@ class STAttention(nn.Module):
     def __init__(
         self, in_channel, embed_dim, num_heads, mlp_ratio, layer_depth, 
         dropout, layers = None, args_attn = None,
-        args_moe = None, moe_position = None):
+        args_moe = None, moe_position = None, dataset = None):
         super(STAttention, self).__init__()
         self.in_channel = in_channel
         self.embed_dim = embed_dim
@@ -33,6 +33,7 @@ class STAttention(nn.Module):
         self.attn_mask_T = args_attn["attn_mask_T"]
         self.d_time_embed = args_attn["d_time_embed"]
         self.d_space_embed = args_attn["d_space_embed"]
+        self.dataset = dataset
         
         # temporal encoding
         self.positional_encoding_1d = Positional1DEncoding()
@@ -41,7 +42,7 @@ class STAttention(nn.Module):
         # spatial encoding
         self.spatial_node_feature = SpatialNodeFeature(self.num_node_deg, self.d_space_embed)
         self.cat_st_embed = nn.Linear(embed_dim+self.d_time_embed+self.d_space_embed, embed_dim)
-        self.spatial_attn_bias = SpatialAttnBias(self.num_shortpath, bias_dim=1)
+        self.spatial_attn_bias = SpatialAttnBias(self.num_shortpath)
         
         self.project = nn.Linear(in_channel, embed_dim)
         
@@ -54,12 +55,8 @@ class STAttention(nn.Module):
             TrandformerEncoder(embed_dim, layer_depth, mlp_ratio, num_heads, dropout,\
                 args_moe if moe_posList[i]==1 else args_wo_moe)
             for i in range(len(layers))])
-
-    def encoding(self, history_data, graph):
-        """
-        Args: history_data (torch.Tensor): history flow data [B, T, N, C]
-        Returns: torch.Tensor: hidden states
-        """
+        
+    def forward(self, history_data, graph=None): # history_data: [B,T,N,C]; graph: [N,N] 
         ### fetch the tod/dow
         history_data = history_data.permute(0, 2, 1, 3) # [B, N, T, C]
         tod = history_data[..., -2]
@@ -96,7 +93,7 @@ class STAttention(nn.Module):
         ## 计算spatial的attn bias
         attn_bias_spatial = None
         if self.attn_bias_S:
-            attn_bias_spatial = self.spatial_attn_bias(graph) # [n, n, 1]
+            attn_bias_spatial = self.spatial_attn_bias(graph, self.dataset) # [n, n, 1]
             
         aux_loss = torch.tensor(0, dtype=torch.float32).to('cuda')
         layers_full = ['T'] + self.layers
@@ -111,11 +108,7 @@ class STAttention(nn.Module):
             aux_loss += loss
         if layers_full[-1] == 'S':
             encoder_input = encoder_input.transpose(-2,-3)
-        return encoder_input, aux_loss
-
-    def forward(self, history_data, graph=None): # history_data: [B,T,N,C]; graph: [N,N] 
-        repr, aux_loss = self.encoding(history_data, graph) # [B, N, T, D]
-        return repr, aux_loss
+        return encoder_input, aux_loss # # [B, N, T, D] [1]
 
 
 ########################################
