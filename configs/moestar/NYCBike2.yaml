@@ -19,7 +19,7 @@ tod_scaler: 1
 steps_per_day: 48
 
 ## MoE
-moe_status: SoftMoE # SoftMoE / SharedMoE / MoE / STMoE / None
+moe_status: None # SoftMoE / SharedMoE / MoE / STMoE / None
 moe_mlr: False  # learning rate of experts
 num_experts: 6
 moe_dropout: 0.1
@@ -34,8 +34,8 @@ layers: ['S','T','S','T']
 d_input: 4  # inflow outflow tod dow
 d_output: 2  # inflow and outflow
 d_model: 64
-d_time_embed: 32
-d_space_embed: 32
+d_time_embed: 24
+d_space_embed: 24
 num_heads: 4
 mlp_ratio: 4
 layer_depth: 1    # depth for one S/T Attention Module
@@ -43,9 +43,9 @@ dropout: 0.3
 yita: 0.5 # balance for inflow loss and outflow loss, $yita * inflow + (1 - yita) * outflow$
 fft_status: False # Frequency
 ## spatio-temporal information injection
-pos_embed_T: True
-cen_embed_S: True # Spatial Centrality Encoding
-attn_bias_S: True
+pos_embed_T: False
+cen_embed_S: False # Spatial Centrality Encoding
+attn_bias_S: False
 attn_mask_S: False
 attn_mask_T: False
 
