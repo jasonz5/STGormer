@@ -32,6 +32,7 @@ def model_supervisor(args):
         data_dir=args.data_dir, 
         dataset=args.dataset, 
         d_input=args.d_input,
+        d_output=args.d_output,
         batch_size=args.batch_size, 
         test_batch_size=args.test_batch_size,
     )
@@ -100,15 +101,14 @@ if __name__=='__main__':
     # python main.py -g=$1 -s=$2
     parser = argparse.ArgumentParser()
     parser.add_argument('-g', '--gpu_id', type=str, default='7', help='GPU ID to use')
-    parser.add_argument('--config_filename', default='configs/moestar/METRLA.yaml', 
-                    type=str, help='the configuration to use')
+    parser.add_argument('-d', '--dataset', default='NYCTaxi', type=str, help='Dataset to use')
     parser.add_argument('-s', '--save_path', type=str, default=None, help='save path of log file')
     args = parser.parse_args()
+    config_filename = f'configs/moestar/{args.dataset}.yaml'
     
-    print(f'Starting experiment with configurations in {args.config_filename}...')
-    # time.sleep(1)
+    print(f'Starting experiment with configurations in {config_filename}...')
     configs = yaml.load(
-        open(args.config_filename), 
+        open(config_filename), 
         Loader=yaml.FullLoader
     )
     configs['save_path'] = args.save_path

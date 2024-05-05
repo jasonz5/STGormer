@@ -68,6 +68,13 @@ def load_graph(adj_file, device='cpu'):
     graph = torch.tensor(graph, device=device, dtype=torch.float)
     return graph
 
+def graph_unify(graph):
+    '''adapt the graph of pems/metr to stssl model'''
+    graph = torch.max(graph, graph.transpose(0, 1))
+    graph = (graph > 0.4).float()
+    torch.diagonal(graph).fill_(0)
+    return graph
+    
 def dwa(L_old, L_new, T=2):
     '''
     L_old: list.

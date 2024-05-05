@@ -18,6 +18,7 @@ from lib.utils import (
     init_seed,
     get_model_params,
     load_graph, 
+    graph_unify, 
 )
 
 def model_supervisor(args):
@@ -29,11 +30,15 @@ def model_supervisor(args):
     dataloader = get_dataloader(
         data_dir=args.data_dir, 
         dataset=args.dataset, 
+        d_input=args.d_input,
+        d_output=args.d_output,
         batch_size=args.batch_size, 
         test_batch_size=args.test_batch_size,
     )
     graph = load_graph(args.graph_file, device=args.device)
-    args.num_nodes = len(graph)
+    if args.dataset in ['METRLA', 'PEMSBAY']:
+        graph = graph_unify(graph)
+    assert args.num_nodes == len(graph), "num_nodes not right"
     
     ## init model and set optimizer
     model = STSSL(args).to(args.device)
@@ -77,15 +82,14 @@ def model_supervisor(args):
 if __name__=='__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-g', '--gpu_id', type=str, default='7', help='GPU ID to use')
-    parser.add_argument('--config_filename', default='configs/stssl/NYCBike1.yaml', 
-                    type=str, help='the configuration to use')
+    parser.add_argument('-d', '--dataset', default='NYCTaxi', type=str, help='Dataset to use')
     parser.add_argument('-s', '--save_path', type=str, default=None, help='save path of log file')
     args = parser.parse_args()
+    config_filename = f'configs/stssl/{args.dataset}.yaml'
     
-    print(f'Starting experiment with configurations in {args.config_filename}...')
-    # time.sleep(1)
+    print(f'Starting experiment with configurations in {config_filename}...')
     configs = yaml.load(
-        open(args.config_filename), 
+        open(config_filename), 
         Loader=yaml.FullLoader
     )
     configs['save_path'] = args.save_path

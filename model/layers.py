@@ -61,7 +61,7 @@ class STAttention(nn.Module):
         history_data = history_data.permute(0, 2, 1, 3) # [B, N, T, C]
         tod = history_data[..., -2]
         dow = history_data[..., -1]
-        flow_data = history_data[..., :self.in_channel]
+        flow_data = history_data[..., :self.in_channel] # 包含了tod+dow
         # project the #dim of input to #embed_dim
         encoder_input = self.project(flow_data)  # B, N, T, D
         B, N, T, D = encoder_input.shape
@@ -141,7 +141,7 @@ def main():
     os.environ['CUDA_VISIBLE_DEVICES'] = GPU
     device = "cuda" if torch.cuda.is_available() else "cpu"
     
-    model = STAttention(in_channel=2, embed_dim=64, num_heads=4, mlp_ratio=4, layer_depth=1, dropout=0.1).to(device)
+    model = STAttention(in_channel=4, embed_dim=64, num_heads=4, mlp_ratio=4, layer_depth=1, dropout=0.1).to(device)
 
     # 定义日志文件的路径
     log_path = "../log/statt.log"  # 根据您的目录结构调整路径

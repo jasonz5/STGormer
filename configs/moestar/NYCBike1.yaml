@@ -3,7 +3,7 @@ seed: 31
 device: cuda
 mode: train
 best_path: Null  #experiments/***/best_model.pth  # Null 
-debug: True  
+debug: False  
 
 ## data 
 data_dir: data
@@ -31,7 +31,7 @@ expertWeights: [0.8, 0.2] # SharedMoE
 
 ## model 
 layers: ['S','T','S','T']
-d_input: 2  # inflow and outflow
+d_input: 4  # inflow outflow tod dow
 d_output: 2  # inflow and outflow
 d_model: 64
 d_time_embed: 32

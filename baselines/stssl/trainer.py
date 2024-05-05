@@ -178,15 +178,24 @@ class Trainer(object):
         y_pred = scaler.inverse_transform(torch.cat(y_pred, dim=0))
 
         test_results = []
-        # inflow
-        mae, mape = test_metrics(y_pred[..., 0], y_true[..., 0], mask1=args.mask_value_test)
-        logger.info("INFLOW, MAE: {:.2f}, MAPE: {:.4f}%".format(mae, mape*100))
-        test_results.append([mae, mape])
-        # outflow 
-        mae, mape = test_metrics(y_pred[..., 1], y_true[..., 1], mask1=args.mask_value_test)
-        logger.info("OUTFLOW, MAE: {:.2f}, MAPE: {:.4f}%".format(mae, mape*100))
-        test_results.append([mae, mape]) 
-
+        if args.dataset in ['METRLA', 'PEMSBAY']:
+            # speed
+            mae, rmse, mape = test_metrics(y_pred[..., 0], y_true[..., 0], mask=args.mask_value_test)
+            logger.info("SPEED, MAE: {:.2f}, RMSE: {:.2f}, MAPE: {:.4f}%".format(mae, rmse, mape*100))
+            test_results.append([mae, rmse, mape])
+        else: 
+            # inflow
+            mae, rmse, mape = test_metrics(y_pred[..., 0], y_true[..., 0], mask=args.mask_value_test)
+            logger.info("INFLOW, MAE: {:.2f}, RMSE: {:.2f}, MAPE: {:.4f}%".format(mae, rmse, mape*100))
+            test_results.append([mae, rmse, mape])
+            # outflow 
+            mae, rmse, mape = test_metrics(y_pred[..., 1], y_true[..., 1], mask=args.mask_value_test)
+            logger.info("OUTFLOW, MAE: {:.2f}, RMSE: {:.2f}, MAPE: {:.4f}%".format(mae, rmse, mape*100))
+            test_results.append([mae, rmse, mape]) 
+            # flow
+            mae, rmse, mape = test_metrics(y_pred[..., 0:2], y_true[..., 0:2], mask=args.mask_value_test)
+            logger.info("FLOW, MAE: {:.2f}, RMSE: {:.2f}, MAPE: {:.4f}%".format(mae, rmse, mape*100))
+            test_results.append([mae, rmse, mape]) 
         return np.stack(test_results, axis=0)
 
 

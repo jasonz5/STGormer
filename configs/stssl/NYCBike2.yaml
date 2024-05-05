@@ -2,16 +2,18 @@
 seed: 31
 device: cuda
 mode: train
-best_path: None 
+best_path: Null 
 debug: False 
 
 ## data
 data_dir: data
 dataset: NYCBike2 
 input_length: 35
+output_length: 1
 batch_size: 32
 test_batch_size: 32
 graph_file: data/NYCBike2/adj_mx.npz  # num_nodes 200 (20 x 10)
+num_nodes: 200
 
 ## model 
 d_input: 2                  # means inflow and outflow
@@ -24,8 +26,12 @@ nmb_prototype: 10           # number of clusters
 yita: 0.5                   # balance for inflow loss and outflow loss, $yita * inflow + (1 - yita) * outflow$
 
 ## train 
-epochs: 100
+epochs: 250
 lr_init: 0.001 
+# mask value setting #
+mask_value_train: 5.0
+mask_value_test: 5.0
+# others #
 early_stop: True
 early_stop_patience: 15
 grad_norm: True

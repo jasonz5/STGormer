@@ -2,32 +2,32 @@
 seed: 31
 device: cuda
 mode: train
-best_path: Null 
-debug: False 
+best_path: Null  
+debug: False  
 
-## data
+## data 
 data_dir: data
-dataset: NYCTaxi 
-input_length: 35
-output_length: 1
+dataset: METRLA  
+input_length: 12
+output_length: 12
 batch_size: 32
 test_batch_size: 32
-graph_file: data/NYCTaxi/adj_mx.npz # num_nodes 200 (20 x 10)
-num_nodes: 200
+graph_file: data/METRLA/adj_mx.npz
+num_nodes: 207
 
 ## model 
-d_input: 2                  # means inflow and outflow
-d_output: 2                 # means inflow and outflow
+d_input: 1                  # means inflow and outflow
+d_output: 1                 # means inflow and outflow
 d_model: 64
-dropout: 0.1
+dropout: 0.2
 percent: 0.1                # augumentation percentage  
 shm_temp: 0.5               # temperature for loss of spatial heterogeneity modeling  , 0.5 is best for NYCBike
-nmb_prototype: 4            # number of clusters
+nmb_prototype: 6            # number of cluster 
 yita: 0.5                   # balance for inflow loss and outflow loss, $yita * inflow + (1 - yita) * outflow$
 
-## train 
+## train
 epochs: 250
-lr_init: 0.001 
+lr_init: 0.001
 # mask value setting #
 mask_value_train: 5.0
 mask_value_test: 5.0
@@ -37,4 +37,4 @@ early_stop_patience: 15
 grad_norm: True
 max_grad_norm: 5
 use_dwa: True         # whether to use dwa for loss balance
-temp: 2               # tempurature parameter in dwa, a larger T means more similer weights
+temp: 4               # tempurature parameter in dwa, a larger T means more similer weights

@@ -70,72 +70,53 @@ def STDataloader(X, Y, batch_size, shuffle=True, drop_last=True):
     )
     return dataloader
 
-def normalize_data(data, d_input, scalar_type='Standard'):
+def normalize_data(data, d_output, scalar_type='Standard'):
     scalar = None
     if scalar_type == 'MinMax01':
-        scalar = MinMax01Scaler(min=data[..., :d_input].min(), max=data[..., :d_input].max())
+        scalar = MinMax01Scaler(min=data[..., :d_output].min(), max=data[..., :d_output].max())
     elif scalar_type == 'MinMax11':
-        scalar = MinMax11Scaler(min=data[..., :d_input].min(), max=data[..., :d_input].max())
+        scalar = MinMax11Scaler(min=data[..., :d_output].min(), max=data[..., :d_output].max())
     elif scalar_type == 'Standard':
-        scalar = StandardScaler(mean=data[..., :d_input].mean(), std=data[..., :d_input].std())
+        scalar = StandardScaler(mean=data[..., :d_output].mean(), std=data[..., :d_output].std())
     else:
         raise ValueError('scalar_type is not supported in data_normalization.')
     # print('{} scalar is used!!!'.format(scalar_type))
     # time.sleep(3)
     return scalar
 
-def get_dataloader(data_dir, dataset, d_input, batch_size, test_batch_size, scalar_type='Standard'):
+def get_dataloader(data_dir, dataset, d_input, d_output, batch_size, test_batch_size, scalar_type='Standard'):
     data = {}
     for category in ['train', 'val', 'test']:
         cat_data = np.load(os.path.join(data_dir, dataset, category + '.npz'))
         data['x_' + category] = cat_data['x']
         data['y_' + category] = cat_data['y']
-    scaler = normalize_data(np.concatenate([data['x_train'], data['x_val']], axis=0), d_input, scalar_type)
+    scaler = normalize_data(np.concatenate([data['x_train'], data['x_val']], axis=0), d_output, scalar_type)
     
     # Data format
     for category in ['train', 'val', 'test']:
-        data['x_' + category][..., :d_input] = scaler.transform(data['x_' + category][..., :d_input])
-        data['y_' + category][..., :d_input] = scaler.transform(data['y_' + category][..., :d_input])
+        data['x_' + category][..., :d_output] = scaler.transform(data['x_' + category][..., :d_output])
+        data['y_' + category][..., :d_output] = scaler.transform(data['y_' + category][..., :d_output])
     # Construct dataloader
     dataloader = {}
     dataloader['train'] = STDataloader(
-        data['x_train'][:32,:,:,:], 
-        data['y_train'][:32,:,:, :d_input], 
+        data['x_train'][..., :d_input], 
+        data['y_train'][..., :d_output], 
         batch_size, 
         shuffle=True
     )
     dataloader['val'] = STDataloader(
-        data['x_val'][:32,:,:,:], 
-        data['y_val'][:32,:,:, :d_input], 
+        data['x_val'][..., :d_input], 
+        data['y_val'][..., :d_output], 
         test_batch_size, 
         shuffle=False
     )
     dataloader['test'] = STDataloader(
-        data['x_test'][:32,:,:,:], 
-        data['y_test'][:32,:,:, :d_input], 
+        data['x_test'][..., :d_input], 
+        data['y_test'][..., :d_output], 
         test_batch_size, 
         shuffle=False, 
         drop_last=False
     )
-    # dataloader['train'] = STDataloader(
-    #     data['x_train'], 
-    #     data['y_train'][..., :d_input], 
-    #     batch_size, 
-    #     shuffle=True
-    # )
-    # dataloader['val'] = STDataloader(
-    #     data['x_val'], 
-    #     data['y_val'][..., :d_input], 
-    #     test_batch_size, 
-    #     shuffle=False
-    # )
-    # dataloader['test'] = STDataloader(
-    #     data['x_test'], 
-    #     data['y_test'][..., :d_input], 
-    #     test_batch_size, 
-    #     shuffle=False, 
-    #     drop_last=False
-    # )
     dataloader['scaler'] = scaler
     return dataloader
 

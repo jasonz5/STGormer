@@ -73,6 +73,6 @@ class MoESTar(nn.Module):
  
         # loss = self.args.yita * self.mae(y_pred[..., 0], y_true[..., 0]) + \
         #         (1 - self.args.yita) * self.mae(y_pred[..., 1], y_true[..., 1])
-        loss = self.mae(y_pred[..., :self.args.d_input], y_true[..., :self.args.d_input])
+        loss = self.mae(y_pred[..., :self.args.d_output], y_true[..., :self.args.d_output])
         return loss
     

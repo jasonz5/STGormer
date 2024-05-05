@@ -1,18 +1,19 @@
 ## global
 seed: 31
 device: cuda
-mode: test
-best_path: experiments/NYCBike1/Others/STSSL/20240329-130540/best_model.pth # | Null  
-debug: True  
+mode: train
+best_path: Null  
+debug: False  
 
 ## data 
 data_dir: data
 dataset: NYCBike1  
 input_length: 19 # 4+5*3
-num_nodes: 128
+output_length: 1
 batch_size: 32
 test_batch_size: 32
 graph_file: data/NYCBike1/adj_mx.npz # 128 x 128
+num_nodes: 128
 
 ## model 
 d_input: 2                  # means inflow and outflow
@@ -25,12 +26,12 @@ nmb_prototype: 6            # number of cluster
 yita: 0.6                   # balance for inflow loss and outflow loss, $yita * inflow + (1 - yita) * outflow$
 
 ## train
-epochs: 100
+epochs: 250
 lr_init: 0.001
-## mask value setting ##
+# mask value setting #
 mask_value_train: 5.0
-mask_value_test: 5.0 # 5.0 | Null $important$
-## mask value setting ##
+mask_value_test: 5.0
+# others #
 early_stop: True
 early_stop_patience: 15
 grad_norm: True
