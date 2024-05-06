@@ -19,7 +19,8 @@ tod_scaler: 288
 steps_per_day: 288
 
 ## spatio-temporal information injection
-pos_embed_T: True
+layers: ['S','S','S','T','T','T']  # ['S','T','S','T','S','T'] ['T','S','T','S','T','S'] ['T','T','T','S','S','S'] ['S','S','S','T','T','T'] 
+pos_embed_T: False
 cen_embed_S: True # Spatial Centrality Encoding
 attn_bias_S: True
 attn_mask_S: False
@@ -36,7 +37,6 @@ expertWeightsAda: False # SharedMoE
 expertWeights: [0.8, 0.2] # SharedMoE
 
 ## model 
-layers: ['T','T','T','S','S','S'] # ['S','T','S','T','S','T'] ['T','T','T','S','S','S'] ['S','S','S','T','T','T'] 
 d_input: 3  # speed tod dow
 d_output: 1  # speed
 d_model: 64
