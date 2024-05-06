@@ -29,8 +29,8 @@ yita: 0.5                   # balance for inflow loss and outflow loss, $yita * 
 epochs: 100
 lr_init: 0.001
 # mask value setting #
-mask_value_train: 5.0
-mask_value_test: 5.0
+mask_value_train: 0.0
+mask_value_test: 0.0
 # others #
 early_stop: True
 early_stop_patience: 15

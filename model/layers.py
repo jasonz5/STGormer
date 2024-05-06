@@ -41,7 +41,8 @@ class STAttention(nn.Module):
                                     scaler=self.tod_scaler, steps_per_day = args_attn["steps_per_day"])
         # spatial encoding
         self.spatial_node_feature = SpatialNodeFeature(self.num_node_deg, self.d_space_embed)
-        self.cat_st_embed = nn.Linear(embed_dim+self.d_time_embed+self.d_space_embed, embed_dim)
+        input_embed_dim = embed_dim + int(self.pos_embed_T) * self.d_time_embed + int(self.cen_embed_S) * self.d_space_embed
+        self.cat_st_embed = nn.Linear(input_embed_dim, embed_dim)
         self.spatial_attn_bias = SpatialAttnBias(self.num_shortpath)
         
         self.project = nn.Linear(in_channel, embed_dim)
@@ -61,27 +62,29 @@ class STAttention(nn.Module):
         history_data = history_data.permute(0, 2, 1, 3) # [B, N, T, C]
         tod = history_data[..., -2]
         dow = history_data[..., -1]
-        flow_data = history_data[..., :self.in_channel] # 包含了tod+dow
+        flow_data = history_data[..., :self.in_channel] # 不包含tod+dow
         # project the #dim of input to #embed_dim
         encoder_input = self.project(flow_data)  # B, N, T, D
         B, N, T, D = encoder_input.shape
         
-        if  self.pos_embed_T and self.cen_embed_S:
-            # temporal timestamps feature
+        # temporal timestamps feature
+        if  self.pos_embed_T: 
             time_feature =  self.temporal_node_feature(tod, dow) # [B, N, T] -> [B, N, T, D]
-            # spatial node degree information
-            degree = get_degree_array(graph) # [N]
-            degree_feature = self.spatial_node_feature(degree)\
-                .view(1,N,1,-1).expand(B, N, T, self.d_space_embed) # [N, D] -> [B, N, T, D]
-            # concatenation
-            # import ipdb; ipdb.set_trace()
-            encoder_input = self.cat_st_embed(
-                torch.cat([encoder_input, time_feature, degree_feature], dim = -1))
+            encoder_input = torch.cat([encoder_input, time_feature], dim = -1)
         else: # Transformer传统的1D位置编码
             encoder_input = encoder_input.contiguous().view(B*N, T, D)
             encoder_input, _ = self.positional_encoding_1d(encoder_input) # B*N, T, D
             encoder_input = encoder_input.view(B, N, T, D) # B, N, T, D
-            
+
+        # spatial node degree information
+        if  self.cen_embed_S:
+            degree = get_degree_array(graph) # [N]
+            degree_feature = self.spatial_node_feature(degree)\
+                .view(1,N,1,-1).expand(B, N, T, self.d_space_embed) # [N, D] -> [B, N, T, D]
+            encoder_input = torch.cat([encoder_input, degree_feature], dim = -1)
+        if  self.pos_embed_T or self.cen_embed_S:
+            encoder_input = self.cat_st_embed(encoder_input)
+
         ## 计算时间和空间的掩码矩阵 ##
         maskS, maskT = None, None
         if self.attn_mask_S:
@@ -141,7 +144,7 @@ def main():
     os.environ['CUDA_VISIBLE_DEVICES'] = GPU
     device = "cuda" if torch.cuda.is_available() else "cpu"
     
-    model = STAttention(in_channel=4, embed_dim=64, num_heads=4, mlp_ratio=4, layer_depth=1, dropout=0.1).to(device)
+    model = STAttention().to(device)
 
     # 定义日志文件的路径
     log_path = "../log/statt.log"  # 根据您的目录结构调整路径

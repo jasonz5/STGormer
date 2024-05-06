@@ -18,8 +18,14 @@ num_timestamps: 336 # 48*7
 tod_scaler: 1
 steps_per_day: 48
 
+## spatio-temporal information injection
+pos_embed_T: True
+cen_embed_S: True # Spatial Centrality Encoding
+attn_bias_S: True
+attn_mask_S: False
+attn_mask_T: False
 ## MoE
-moe_status: None # SoftMoE / SharedMoE / MoE / STMoE / None
+moe_status: SoftMoE # SoftMoE / SharedMoE / MoE / STMoE / None
 moe_mlr: False  # learning rate of experts
 num_experts: 6
 moe_dropout: 0.1
@@ -30,7 +36,7 @@ expertWeightsAda: False # SharedMoE
 expertWeights: [0.8, 0.2] # SharedMoE
 
 ## model 
-layers: ['S','T','S','T']
+layers: ['T','T','T','S','S','S'] # ['S','T','S','T','S','T'] ['T','T','T','S','S','S'] ['S','S','S','T','T','T'] 
 d_input: 4  # inflow outflow tod dow
 d_output: 2  # inflow and outflow
 d_model: 64
@@ -39,22 +45,16 @@ d_space_embed: 24
 num_heads: 4
 mlp_ratio: 4
 layer_depth: 1    # depth for one S/T Attention Module
-dropout: 0.3
+dropout: 0.1
 yita: 0.5 # balance for inflow loss and outflow loss, $yita * inflow + (1 - yita) * outflow$
 fft_status: False # Frequency
-## spatio-temporal information injection
-pos_embed_T: False
-cen_embed_S: False # Spatial Centrality Encoding
-attn_bias_S: False
-attn_mask_S: False
-attn_mask_T: False
 
 ## train 
-epochs: 250
+epochs: 200
 # learning rate #
-lr_init: 2.0e-3
-scheduler: MultiStepLR # StepLR MultiStepLR ExponentialLR ReduceLROnPlateau
-step_size: 30 # StepLR
+lr_init: 0.001
+scheduler: StepLR # StepLR MultiStepLR ExponentialLR ReduceLROnPlateau
+step_size: 25 # StepLR
 milestones: [1, 60, 90, 120, 150] # MultiStepLR
 factor: 0.8 # ReduceLROnPlateau
 patience: 10 # ReduceLROnPlateau
@@ -64,7 +64,7 @@ mask_value_train: 5.0
 mask_value_test: 5.0
 # others #
 early_stop: True
-early_stop_patience: 25
+early_stop_patience: 30
 grad_norm: True
 max_grad_norm: 5
 use_dwa: False # whether to use dwa for loss balance

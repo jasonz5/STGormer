@@ -26,8 +26,8 @@ class MoESTar(nn.Module):
                     "num_shortpath": args.num_shortpath, "num_node_deg": args.num_node_deg,
                     "attn_mask_S": args.attn_mask_S, "attn_mask_T": args.attn_mask_T,
                     "d_time_embed": args.d_time_embed, "d_space_embed": args.d_space_embed}
-        self.encoder = STAttention(
-            args.d_input, args.d_model, args.num_heads, args.mlp_ratio,
+        self.encoder = STAttention( #IMPORT: d_output
+            args.d_output, args.d_model, args.num_heads, args.mlp_ratio,
             args.layer_depth, args.dropout, args.layers, args_attn = args_attn, 
             args_moe = args_moe, moe_position = args.moe_position, dataset = args.dataset)
         
