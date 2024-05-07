@@ -10,8 +10,8 @@ data_dir: data
 dataset: NYCTaxi 
 input_length: 35 # 8+9*3
 output_length: 1
-batch_size: 32
-test_batch_size: 32
+batch_size: 16
+test_batch_size: 16
 graph_file: data/NYCTaxi/adj_mx.npz
 num_nodes: 200
 num_timestamps: 336 # 48*7
@@ -20,6 +20,7 @@ steps_per_day: 48
 
 ## spatio-temporal information injection
 layers: ['S','S','S','T','T','T'] # ['S','T','S','T','S','T'] ['T','S','T','S','T','S'] ['T','T','T','S','S','S'] ['S','S','S','T','T','T'] 
+layer_depth: 1    # depth for one S/T Attention Module
 pos_embed_T: False
 cen_embed_S: True # Spatial Centrality Encoding
 attn_bias_S: True
@@ -44,7 +45,6 @@ d_time_embed: 24
 d_space_embed: 24
 num_heads: 4
 mlp_ratio: 4
-layer_depth: 1    # depth for one S/T Attention Module
 dropout: 0.1
 yita: 0.5 # balance for inflow loss and outflow loss, $yita * inflow + (1 - yita) * outflow$
 fft_status: False # Frequency
