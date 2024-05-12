@@ -19,8 +19,8 @@ tod_scaler: 1
 steps_per_day: 48
 
 ## spatio-temporal information injection
-layers: ['S','S','S','T','T','T'] # ['S','T','S','T','S','T'] ['T','S','T','S','T','S'] ['T','T','T','S','S','S'] ['S','S','S','T','T','T'] 
-layer_depth: 1    # depth for one S/T Attention Module
+layers: ['S','T'] # ['S','T','S','T','S','T'] ['T','S','T','S','T','S'] ['T','T','T','S','S','S'] ['S','S','S','T','T','T'] 
+layer_depth: 3    # depth for one S/T Attention Module
 pos_embed_T: False
 cen_embed_S: True # Spatial Centrality Encoding
 attn_bias_S: True
