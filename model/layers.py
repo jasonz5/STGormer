@@ -41,7 +41,7 @@ class STAttention(nn.Module):
                                     scaler=self.tod_scaler, steps_per_day = args_attn["steps_per_day"])
         # spatial encoding
         self.spatial_node_feature = SpatialNodeFeature(self.num_node_deg, self.d_space_embed)
-        input_embed_dim = embed_dim + int(self.pos_embed_T) * self.d_time_embed + int(self.cen_embed_S) * self.d_space_embed
+        input_embed_dim = embed_dim + int(self.pos_embed_T == "timestamp") * self.d_time_embed + int(self.cen_embed_S) * self.d_space_embed
         self.cat_st_embed = nn.Linear(input_embed_dim, embed_dim)
         self.spatial_attn_bias = SpatialAttnBias(self.num_shortpath)
         
@@ -68,10 +68,10 @@ class STAttention(nn.Module):
         B, N, T, D = encoder_input.shape
         
         # temporal timestamps feature
-        if  self.pos_embed_T: 
+        if  self.pos_embed_T == "timestamp": 
             time_feature =  self.temporal_node_feature(tod, dow) # [B, N, T] -> [B, N, T, D]
             encoder_input = torch.cat([encoder_input, time_feature], dim = -1)
-        else: # Transformer传统的1D位置编码
+        elif self.pos_embed_T == "timepos": # Transformer传统的1D位置编码
             encoder_input = encoder_input.contiguous().view(B*N, T, D)
             encoder_input, _ = self.positional_encoding_1d(encoder_input) # B*N, T, D
             encoder_input = encoder_input.view(B, N, T, D) # B, N, T, D
@@ -82,7 +82,7 @@ class STAttention(nn.Module):
             degree_feature = self.spatial_node_feature(degree)\
                 .view(1,N,1,-1).expand(B, N, T, self.d_space_embed) # [N, D] -> [B, N, T, D]
             encoder_input = torch.cat([encoder_input, degree_feature], dim = -1)
-        if  self.pos_embed_T or self.cen_embed_S:
+        if  self.pos_embed_T == "timestamp" or self.cen_embed_S:
             encoder_input = self.cat_st_embed(encoder_input)
 
         ## 计算时间和空间的掩码矩阵 ##
