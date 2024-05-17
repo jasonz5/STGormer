@@ -1,9 +1,9 @@
 ## global
 seed: 31
 device: cuda
-mode: train
-best_path: Null #experiments/NYCBike1/best_model/stgormer.pth  # Null 
-debug: False  
+mode: test
+best_path: Null # experiments/NYCBike1/case_study/STAtt_wot/best_model.pth  # Null 
+debug: True  
 
 ## data 
 data_dir: data
@@ -22,8 +22,8 @@ steps_per_day: 24
 layers: ['S','T']  # ['S','T','S','T','S','T'] ['T','S','T','S','T','S'] ['T','T','T','S','S','S'] ['S','S','S','T','T','T'] 
 layer_depth: 3    # depth for one S/T Attention Module
 pos_embed_T: timepos  # timestamp / default(timepos) / None
-cen_embed_S: True # Spatial Centrality Encoding
-attn_bias_S: True
+cen_embed_S: True # STGormer
+attn_bias_S: True # STGormer
 attn_mask_S: False
 attn_mask_T: False
 ## MoE

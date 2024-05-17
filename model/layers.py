@@ -97,7 +97,7 @@ class STAttention(nn.Module):
         attn_bias_spatial = None
         if self.attn_bias_S:
             attn_bias_spatial = self.spatial_attn_bias(graph, self.dataset) # [n, n, 1]
-            
+        
         aux_loss = torch.tensor(0, dtype=torch.float32).to('cuda')
         layers_full = ['T'] + self.layers
         for i in range(1, len(layers_full)):
@@ -111,6 +111,7 @@ class STAttention(nn.Module):
             aux_loss += loss
         if layers_full[-1] == 'S':
             encoder_input = encoder_input.transpose(-2,-3)
+        # ipdb.set_trace()
         return encoder_input, aux_loss # # [B, N, T, D] [1]
 
 
