@@ -3,7 +3,7 @@ seed: 31
 device: cuda
 mode: train
 best_path: Null  #experiments/***/best_model.pth  # Null 
-debug: True  
+debug: False  
 
 ## data 
 data_dir: data
@@ -21,9 +21,9 @@ steps_per_day: 288
 ## spatio-temporal information injection
 layers: ['S','T'] # ['S','T','S','T','S','T'] ['T','S','T','S','T','S'] ['T','T','T','S','S','S'] ['S','S','S','T','T','T'] 
 layer_depth: 3    # depth for one S/T Attention Module
-pos_embed_T: timestamp  # timestamp / timepos / None
-cen_embed_S: True # Spatial Centrality Encoding
-attn_bias_S: True
+pos_embed_T: timestamp  # default(timestamp) / timepos / None
+cen_embed_S: True # STGormer
+attn_bias_S: True # STGormer
 attn_mask_S: False
 attn_mask_T: False
 ## MoE
