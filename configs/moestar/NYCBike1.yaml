@@ -1,7 +1,7 @@
 ## global
 seed: 31
 device: cuda
-mode: test
+mode: train
 best_path: Null # experiments/NYCBike1/case_study/STAtt_wot/best_model.pth  # Null 
 debug: True  
 
