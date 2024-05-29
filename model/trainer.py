@@ -10,7 +10,6 @@ from lib.logger import (
 from lib.utils import (
     get_log_dir, 
     get_model_params, 
-    dwa,  
 )
 from lib.metrics import test_metrics
 
@@ -51,13 +50,11 @@ class Trainer(object):
         self.model.train()
         
         total_loss = 0
-        # total_sep_loss = np.zeros(3) 
         for batch_idx, (data, target) in enumerate(self.train_loader):
             self.optimizer.zero_grad()
             
-            # input shape: n,l,v,c; graph shape: v,v;
-            # import ipdb; ipdb.set_trace()
-            repr, aux_loss = self.model(data, self.graph) # nvc
+            # input shape: [B,T,N,C]; graph shape: [N,N];
+            repr, aux_loss = self.model(data, self.graph) # [B,N,C]
             loss = self.model.loss(repr, target, self.scaler)
             assert not torch.isnan(loss)
             loss += aux_loss
@@ -70,13 +67,11 @@ class Trainer(object):
                     self.args.max_grad_norm)
             self.optimizer.step()
             total_loss += loss.item()
-            # total_sep_loss += sep_loss
 
         train_epoch_loss = total_loss/self.train_per_epoch
-        # total_sep_loss = total_sep_loss/self.train_per_epoch
         self.logger.info('*******Train Epoch {}: averaged Loss : {:.6f}'.format(epoch, train_epoch_loss))
 
-        return train_epoch_loss  #, total_sep_loss
+        return train_epoch_loss
     
     def val_epoch(self, epoch, val_dataloader):
         self.model.eval()
@@ -108,19 +103,7 @@ class Trainer(object):
             self.logger.info('Load best model from: {}'.format(self.args.best_path))
         
         start_time = time.time()
-
-        loss_tm1 = loss_t = np.ones(3) #(1.0, 1.0, 1.0)
-        # loss_weights = np.ones(3) # used in dwa mechanism
         for epoch in range(1, self.args.epochs + 1):
-            # dwa mechanism to balance optimization speed for different tasks
-            if self.args.use_dwa:
-                loss_tm2 = loss_tm1
-                loss_tm1 = loss_t
-                if (epoch == 1) or (epoch == 2):
-                    loss_weights = dwa(loss_tm1, loss_tm1, self.args.temp)
-                else:
-                    loss_weights  = dwa(loss_tm1, loss_tm2, self.args.temp)
-            # self.logger.info('loss weights: {}'.format(loss_weights))
             train_epoch_loss = self.train_epoch(epoch)
             if train_epoch_loss > 1e6:
                 self.logger.warning('Gradient explosion detected. Ending...')

@@ -13,7 +13,7 @@ import os
 
 from model.models import MoESTar
 from model.trainer import Trainer
-from lib.dataloader import get_dataloader
+from lib.dataloader import get_dataloader_from_train_val_test, get_dataloader_from_index_data
 from lib.utils import (
     init_seed,
     get_model_params,
@@ -28,7 +28,11 @@ def model_supervisor(args):
         args.device = 'cpu'
     
     ## load dataset
-    dataloader = get_dataloader(
+    if args.dataset in ['METRLA', 'PEMSBAY']:
+        DATA_LOADER = get_dataloader_from_index_data
+    else: # ['NYCBike1', 'NYCBike2', 'NYCTaxi']
+        DATA_LOADER = get_dataloader_from_train_val_test
+    dataloader = DATA_LOADER(
         data_dir=args.data_dir, 
         dataset=args.dataset, 
         d_input=args.d_input,
@@ -98,7 +102,7 @@ def model_supervisor(args):
     return results
 
 if __name__=='__main__':
-    # python main.py -g=$1 -s=$2
+    # python main.py -g=$1 -d=$2 -s=$3
     parser = argparse.ArgumentParser()
     parser.add_argument('-g', '--gpu_id', type=str, default='0', help='GPU ID to use')
     parser.add_argument('-d', '--dataset', default='NYCBike1', type=str, help='Dataset to use')

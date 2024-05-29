@@ -24,7 +24,6 @@ class STAttention(nn.Module):
         self.layers = layers
         self.pos_embed_T = args_attn["pos_embed_T"]
         self.num_timestamps = args_attn["num_timestamps"]
-        self.tod_scaler = args_attn["tod_scaler"]
         self.cen_embed_S = args_attn["cen_embed_S"]
         self.attn_mask_S = args_attn["attn_mask_S"]
         self.num_shortpath = args_attn["num_shortpath"]
@@ -38,7 +37,7 @@ class STAttention(nn.Module):
         # temporal encoding
         self.positional_encoding_1d = Positional1DEncoding()
         self.temporal_node_feature = TemporalNodeFeature(self.d_time_embed, self.num_timestamps, 
-                                    scaler=self.tod_scaler, steps_per_day = args_attn["steps_per_day"])
+                                    scaler=args_attn["tod_scaler"], steps_per_day = args_attn["steps_per_day"])
         # spatial encoding
         self.spatial_node_feature = SpatialNodeFeature(self.num_node_deg, self.d_space_embed)
         input_embed_dim = embed_dim + int(self.pos_embed_T == "timestamp") * self.d_time_embed + int(self.cen_embed_S) * self.d_space_embed
@@ -47,7 +46,7 @@ class STAttention(nn.Module):
         
         self.project = nn.Linear(in_channel, embed_dim)
         
-        # 确定MoE化位置
+        # MoE position
         moe_posList = generate_moe_posList(layers, moe_position)
         
         args_wo_moe = args_moe.copy()
@@ -62,7 +61,7 @@ class STAttention(nn.Module):
         history_data = history_data.permute(0, 2, 1, 3) # [B, N, T, C]
         tod = history_data[..., -2]
         dow = history_data[..., -1]
-        flow_data = history_data[..., :self.in_channel] # 不包含tod+dow
+        flow_data = history_data[..., :self.in_channel]
         # project the #dim of input to #embed_dim
         encoder_input = self.project(flow_data)  # B, N, T, D
         B, N, T, D = encoder_input.shape

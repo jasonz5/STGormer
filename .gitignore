@@ -4,6 +4,6 @@ data/*
 !data/README.md
 
 experiments/*
-!experiments/*.ipynb
+!experiments/scripts
 
 __pycache__/

@@ -13,7 +13,7 @@ import os
 
 from baselines.stssl.models import STSSL
 from baselines.stssl.trainer import Trainer
-from lib.dataloader import get_dataloader
+from lib.dataloader import get_dataloader_from_train_val_test, get_dataloader_from_index_data
 from lib.utils import (
     init_seed,
     get_model_params,
@@ -27,7 +27,11 @@ def model_supervisor(args):
         args.device = 'cpu'
     
     ## load dataset
-    dataloader = get_dataloader(
+    if args.dataset in ['METRLA', 'PEMSBAY']:
+        DATA_LOADER = get_dataloader_from_index_data
+    else: # ['NYCBike1', 'NYCBike2', 'NYCTaxi']
+        DATA_LOADER = get_dataloader_from_train_val_test
+    dataloader = DATA_LOADER(
         data_dir=args.data_dir, 
         dataset=args.dataset, 
         d_input=args.d_input,
@@ -81,8 +85,8 @@ def model_supervisor(args):
 
 if __name__=='__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('-g', '--gpu_id', type=str, default='7', help='GPU ID to use')
-    parser.add_argument('-d', '--dataset', default='NYCTaxi', type=str, help='Dataset to use')
+    parser.add_argument('-g', '--gpu_id', type=str, default='0', help='GPU ID to use')
+    parser.add_argument('-d', '--dataset', default='NYCBike1', type=str, help='Dataset to use')
     parser.add_argument('-s', '--save_path', type=str, default=None, help='save path of log file')
     args = parser.parse_args()
     config_filename = f'configs/stssl/{args.dataset}.yaml'

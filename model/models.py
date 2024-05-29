@@ -7,15 +7,10 @@ from .layers import (
     MLP, 
 )
 from .utils.filter import FilterLayer
-from .utils.trans_utils import get_shortpath_num, get_num_degree
 
 class MoESTar(nn.Module):
     def __init__(self, args):
         super(MoESTar, self).__init__()
-        # spatial temporal encoder
-        # self.encoder = STAttention(Kt=3, Ks=3, blocks=[[2, int(args.d_model//2), args.d_model], [args.d_model, int(args.d_model//2), args.d_model]], 
-        #                 input_length=args.input_length, num_nodes=args.num_nodes, droprate=args.dropout)
-        
         args_moe = {"moe_status": args.moe_status, "num_experts": args.num_experts,
                     "moe_dropout": args.moe_dropout, "top_k": args.top_k, 
                     "moe_add_ff": args.moe_add_ff, 
@@ -70,9 +65,7 @@ class MoESTar(nn.Module):
     def loss(self, repr, y_true, scaler):
         y_pred = scaler.inverse_transform(self.predict(repr))
         y_true = scaler.inverse_transform(y_true)
- 
-        # loss = self.args.yita * self.mae(y_pred[..., 0], y_true[..., 0]) + \
-        #         (1 - self.args.yita) * self.mae(y_pred[..., 1], y_true[..., 1])
+
         loss = self.mae(y_pred[..., :self.args.d_output], y_true[..., :self.args.d_output])
         return loss
     

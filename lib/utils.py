@@ -35,7 +35,7 @@ def get_model_params(model_list):
     return model_parameters
 
 def get_param_groups(model, base_learning_rate, num_experts, top_k, moe_status):
-    # Scale the learning rate for each expert by 1 / sqrt(num_experts)
+    # Scale the learning rate for each expert by 1 / sqrt(num_experts//top_k)
     per_expert_lr = base_learning_rate / math.sqrt(num_experts//top_k)
     param_groups = []
     for name, param in model.named_parameters():

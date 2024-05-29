@@ -84,7 +84,7 @@ def normalize_data(data, d_output, scalar_type='Standard'):
     # time.sleep(3)
     return scalar
 
-def get_dataloader(data_dir, dataset, d_input, d_output, batch_size, test_batch_size, scalar_type='Standard'):
+def get_dataloader_from_train_val_test(data_dir, dataset, d_input, d_output, batch_size, test_batch_size, scalar_type='Standard'):
     data = {}
     for category in ['train', 'val', 'test']:
         cat_data = np.load(os.path.join(data_dir, dataset, category + '.npz'))
@@ -120,8 +120,60 @@ def get_dataloader(data_dir, dataset, d_input, d_output, batch_size, test_batch_
     dataloader['scaler'] = scaler
     return dataloader
 
+def vrange(starts, stops):
+    stops = np.asarray(stops)
+    l = stops - starts  # Lengths of each range. Should be equal, e.g. [12, 12, 12, ...]
+    assert l.min() == l.max(), "Lengths of each range should be equal."
+    indices = np.repeat(stops - l.cumsum(), l) + np.arange(l.sum())
+    return indices.reshape(-1, l[0])
+
+def get_dataloader_from_index_data(
+    data_dir, dataset, d_input, d_output, batch_size, test_batch_size, scalar_type='Standard'
+):
+    data_all = np.load(os.path.join(data_dir, dataset, "data.npz"))["data"].astype(np.float32)
+    index_all = np.load(os.path.join(data_dir, dataset, "index.npz")) # (num_samples, 3)
+
+    data = {}
+    index = {}
+    for category in ['train', 'val', 'test']:
+        index['x_' + category] = vrange(index_all[category][:, 0], index_all[category][:, 1])
+        index['y_' + category] = vrange(index_all[category][:, 1], index_all[category][:, 2])
+    for category in ['train', 'val', 'test']:
+        data['x_' + category] = data_all(index['x_' + category])
+        data['y_' + category] = data_all(index['y_' + category])
+    scaler = normalize_data(data['x_train'], d_output, scalar_type)
+
+    # Data format
+    for category in ['train', 'val', 'test']:
+        data['x_' + category][..., :d_output] = scaler.transform(data['x_' + category][..., :d_output])
+        data['y_' + category][..., :d_output] = scaler.transform(data['y_' + category][..., :d_output])
+
+    # Construct dataloader
+    dataloader = {}
+    dataloader['train'] = STDataloader(
+        data['x_train'][..., :d_input], 
+        data['y_train'][..., :d_output], 
+        batch_size, 
+        shuffle=True
+    )
+    dataloader['val'] = STDataloader(
+        data['x_val'][..., :d_input], 
+        data['y_val'][..., :d_output], 
+        test_batch_size, 
+        shuffle=False
+    )
+    dataloader['test'] = STDataloader(
+        data['x_test'][..., :d_input], 
+        data['y_test'][..., :d_output], 
+        test_batch_size, 
+        shuffle=False, 
+        drop_last=False
+    )
+    dataloader['scaler'] = scaler
+    return dataloader
+
 if __name__ == '__main__':
-    loader = get_dataloader('../data/', 'NYCBike1', batch_size=64, test_batch_size=64)
+    loader = get_dataloader_from_train_val_test('../data/', 'NYCBike1', batch_size=64, test_batch_size=64)
     for key in loader.keys():
         print(key)
     # import ipdb; ipdb.set_trace()

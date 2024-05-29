@@ -10,6 +10,12 @@ Linux systems (*e.g.* Ubuntu and CentOS).
 
 We implement our code based on [ST-SSL](https://github.com/Echo-Ji/ST-SSL) and [mixture-of-experts](https://github.com/lucidrains/mixture-of-experts).
 
+```bash
+python main.py -g={GPU-ID} /
+-d={datasets，NYCBike1/NYCBike2/NYCTaxi/METRLA/PEMSBAY} /
+-s={save_path}
+```
+
 ### Other Dependencies
 
 ```bash
