@@ -108,7 +108,7 @@ if __name__=='__main__':
     parser.add_argument('-d', '--dataset', default='NYCBike1', type=str, help='Dataset to use')
     parser.add_argument('-s', '--save_path', type=str, default=None, help='save path of log file')
     args = parser.parse_args()
-    config_filename = f'configs/moestar/{args.dataset}.yaml'
+    config_filename = f'configs/stgormer/{args.dataset}.yaml'
     
     print(f'Starting experiment with configurations in {config_filename}...')
     configs = yaml.load(
