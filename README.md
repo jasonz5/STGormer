@@ -1,6 +1,7 @@
 # Navigating Spatio-Temporal Heterogeneity: A Graph Transformer Approach for Traffic Forecasting
 
 Here is the repository containing our code implementation of Spatio-Temporal Graph Transformer (STGormer).
+
 <img src="images/framework.png" alt="PDF Image" height="500">
 
 ## Environment Setup
