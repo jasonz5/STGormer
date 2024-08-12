@@ -1,7 +1,5 @@
 # Navigating Spatio-Temporal Heterogeneity: A Graph Transformer Approach for Traffic Forecasting
 
-| **[Paper]()** | **[Datasets]()** |
-
 Here is the repository containing our code implementation of Spatio-Temporal Graph Transformer (STGormer).
 <img src="images/framework.png" alt="PDF Image" height="500">
 
@@ -14,7 +12,7 @@ pip install -r requirements.txt
 
 ## Datasets
 
-The datasets range from `{NYCBike1, NYCBike2, NYCTaxi, METALA, PEMSBAY}`. Please download the **[Dataset]()** into the folder `data/`.
+The datasets range from `{NYCBike1, NYCBike2, NYCTaxi, METALA, PEMSBAY}`. Please download the **[Dataset](https://drive.google.com/file/d/1bExLL29FBA1KTqzWhgAZ3XhBo9CSYvby/view?usp=sharing)** into the folder `data/`.
 ```
 cd data/ && unzip Datesets.zip
 ```
