@@ -13,10 +13,13 @@ pip install -r requirements.txt
 
 ## Datasets
 
-The datasets range from `{NYCBike1, NYCBike2, NYCTaxi, METALA, PEMSBAY}`. Please download the **[Dataset](https://drive.google.com/file/d/1bExLL29FBA1KTqzWhgAZ3XhBo9CSYvby/view?usp=sharing)** into the folder `data/`.
+The datasets range from `{NYCBike1, NYCBike2, NYCTaxi}`. Please download the **[Dataset](https://drive.google.com/file/d/1bExLL29FBA1KTqzWhgAZ3XhBo9CSYvby/view?usp=sharing)** into the folder `data/`.
 ```
 cd data/ && unzip Datesets.zip
 ```
+
+<details>
+  <summary>Depracted: Preprocessing</summary>
 And you need to change the format of `{METALA, PEMSBAY}` by following the instructions in `data/pmes2nyc.ipynb`. Each dataset is composed of 4 files, namely `train.npz`, `val.npz`, `test.npz`, and `adj_mx.npz`.
 ```
 |----{Dataset}\
@@ -25,6 +28,7 @@ And you need to change the format of `{METALA, PEMSBAY}` by following the instru
 |    |----val.npz      # validation data
 |    |----adj_mx.npz   # predefined graph structure
 ```
+</details>
 
 ## Model training
 ```bash
